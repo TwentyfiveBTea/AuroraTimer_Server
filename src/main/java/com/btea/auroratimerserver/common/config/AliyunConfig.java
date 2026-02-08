@@ -1,4 +1,4 @@
-package com.btea.wxgoutmanage.common.config;
+package com.btea.auroratimerserver.common.config;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * @Author: TwentyFiveBTea
- * @Date: 2025/10/13 16:17
+ * @Date: 2026/02/09 03:12
  * @Description: 阿里云配置类
  */
 @Data
@@ -30,12 +30,6 @@ public class AliyunConfig {
      */
     @Value("${aliyun.smsCode.region-id}")
     private String regionId;
-
-    /**
-     * 短信模板 ID
-     */
-    @Value("${aliyun.smsCode.template-code}")
-    private String templateCode;
 
     /**
      * endpoint

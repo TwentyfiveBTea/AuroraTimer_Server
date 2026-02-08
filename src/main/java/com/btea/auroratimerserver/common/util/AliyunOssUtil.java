@@ -3,6 +3,7 @@ package com.btea.auroratimerserver.common.util;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.PutObjectRequest;
+import com.btea.auroratimerserver.common.config.AliyunConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
