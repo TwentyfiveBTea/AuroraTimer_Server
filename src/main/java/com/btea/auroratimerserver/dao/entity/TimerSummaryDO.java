@@ -23,12 +23,12 @@ public class TimerSummaryDO {
     /**
      * 主键 ID
      */
-    private Long id;
+    private String id;
 
     /**
      * 学号
      */
-    private Long userId;
+    private String userId;
 
     /**
      * 每周目标时长（秒）

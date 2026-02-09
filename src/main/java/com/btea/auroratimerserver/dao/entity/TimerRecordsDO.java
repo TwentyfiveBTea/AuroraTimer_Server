@@ -23,12 +23,12 @@ public class TimerRecordsDO {
     /**
      * 主键 ID
      */
-    private Long id;
+    private String id;
 
     /**
      * 学号
      */
-    private Long userId;
+    private String userId;
 
     /**
      * 本次时长（秒）

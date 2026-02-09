@@ -23,7 +23,7 @@ public class NotificationsDO {
     /**
      * 主键 ID
      */
-    private Long id;
+    private String id;
 
     /**
      * 通知类型
