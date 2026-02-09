@@ -16,7 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 
 /**
@@ -47,6 +47,7 @@ public class GlobalExceptionHandler {
     /**
      * 拦截应用内抛出的异常
      */
+    @SneakyThrows
     @ExceptionHandler(value = {AbstractException.class})
     public Result abstractException(HttpServletRequest request, AbstractException ex) {
         if (ex.getCause() != null) {

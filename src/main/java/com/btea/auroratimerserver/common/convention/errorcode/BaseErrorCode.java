@@ -17,7 +17,12 @@ public enum BaseErrorCode implements IErrorCode {
     CLIENT_ERROR("0000100", "客户端异常"),
 
     // 服务端错误码
-    SERVICE_ERROR("0000200", "服务端异常");
+    SERVICE_ERROR("0000200", "服务端异常"),
+
+    // 业务逻辑错误码
+    USER_REGISTERED("0000300", "用户已注册"),
+    PASSWORD_NOT_MATCH("0000301", "两次密码不一致"),
+    USER_NOT_FOUND("0000302", "用户不存在");
 
     // 用户注册登陆错误码
     private final String code;
