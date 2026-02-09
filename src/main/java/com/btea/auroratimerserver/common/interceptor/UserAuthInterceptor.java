@@ -26,6 +26,12 @@ public class UserAuthInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         // 从请求头提取 Token
         String authHeader = request.getHeader("Authorization");
+
+        // 如果没有 Authorizatoin 头，放行
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return true;
+        }
+
         String token = jwtUtil.extractTokenFromHeader(authHeader);
 
         // 验证 Token 是否有效

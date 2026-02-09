@@ -39,15 +39,15 @@ public class JwtUtil {
     /**
      * 生成普通用户 Token
      */
-    public String generateUserToken(Long userId) {
-        return generateToken(String.valueOf(userId), JwtRoleEnum.USER.getRole());
+    public String generateUserToken(String userId) {
+        return generateToken(userId, JwtRoleEnum.USER.getRole());
     }
 
     /**
      * 生成管理员 Token
      */
-    public String generateAdminToken(Long userId) {
-        return generateToken(String.valueOf(userId), JwtRoleEnum.ADMIN.getRole());
+    public String generateAdminToken(String userId) {
+        return generateToken(userId, JwtRoleEnum.ADMIN.getRole());
     }
 
     private String generateToken(String subject, String roleCode) {
@@ -55,7 +55,7 @@ public class JwtUtil {
         claims.put(jwtConfig.getRoleClaim(), roleCode);
 
         Date now = new Date();
-        Date expiration = new Date(now.getTime() + jwtConfig.getExpiration());
+        Date expiration = new Date(now.getTime() + jwtConfig.getExpiration().toMillis());
 
         return Jwts.builder()
                 .subject(subject)

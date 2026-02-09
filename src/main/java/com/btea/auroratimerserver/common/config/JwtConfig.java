@@ -5,6 +5,8 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+
 /**
  * @Author: TwentyFiveBTea
  * @Date: 2026/2/9 13:45
@@ -24,7 +26,7 @@ public class JwtConfig {
     /**
      * Token过期时间（毫秒）
      */
-    private Long expiration;
+    private Duration expiration;
 
     /**
      * 请求头名称
