@@ -1,5 +1,7 @@
 package com.btea.auroratimerserver.common.context;
 
+import com.btea.auroratimerserver.common.enums.JwtRoleEnum;
+
 /**
  * @Author: TwentyFiveBTea
  * @Date: 2026/02/08 03:09
@@ -7,30 +9,58 @@ package com.btea.auroratimerserver.common.context;
  */
 public class UserContext {
 
-    private static final ThreadLocal<String> USER_ID_THREAD_LOCAL = new ThreadLocal<>();
+    private static final ThreadLocal<Long> USER_ID_THREAD_LOCAL = new ThreadLocal<>();
+    private static final ThreadLocal<JwtRoleEnum> USER_ROLE_THREAD_LOCAL = new ThreadLocal<>();
 
     /**
      * 设置当前用户ID
-     *
-     * @param userId 用户ID
      */
-    public static void setUserId(String userId) {
+    public static void setCurrentUserId(Long userId) {
         USER_ID_THREAD_LOCAL.set(userId);
     }
 
     /**
      * 获取当前用户ID
-     *
-     * @return 用户ID
      */
-    public static String getUserId() {
+    public static Long getCurrentUserId() {
         return USER_ID_THREAD_LOCAL.get();
     }
 
     /**
-     * 清除当前用户ID
+     * 设置当前用户角色
+     */
+    public static void setCurrentUserRole(JwtRoleEnum role) {
+        USER_ROLE_THREAD_LOCAL.set(role);
+    }
+
+    /**
+     * 获取当前用户角色
+     */
+    public static JwtRoleEnum getCurrentUserRole() {
+        return USER_ROLE_THREAD_LOCAL.get();
+    }
+
+    /**
+     * 判断是否为管理员
+     */
+    public static boolean isAdmin() {
+        JwtRoleEnum role = getCurrentUserRole();
+        return role == JwtRoleEnum.ADMIN;
+    }
+
+    /**
+     * 判断是否为普通用户
+     */
+    public static boolean isUser() {
+        JwtRoleEnum role = getCurrentUserRole();
+        return role == JwtRoleEnum.USER;
+    }
+
+    /**
+     * 清理ThreadLocal
      */
     public static void clear() {
         USER_ID_THREAD_LOCAL.remove();
+        USER_ROLE_THREAD_LOCAL.remove();
     }
 }
