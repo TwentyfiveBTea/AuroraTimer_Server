@@ -77,11 +77,18 @@
             <version>${hutool.version}</version>
         </dependency>
 
-        <!-- 参数验证 -->
+        <!-- 参数验证 (Jakarta Validation) -->
         <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
             <version>${validation-api.version}</version>
+        </dependency>
+
+        <!-- Hibernate Validator 实现 -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>8.0.1.Final</version>
         </dependency>
 
         <!-- Servlet API (javax.servlet) -->
