@@ -1,10 +1,11 @@
 package com.btea.auroratimerserver.req;
 
+import lombok.Data;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
 
 /**
  * @Author: TwentyFiveBTea
@@ -12,7 +13,7 @@ import lombok.Data;
  * @Description: 注册请求类
  */
 @Data
-public class registerReq {
+public class RegisterReq {
 
     /**
      * 姓名
