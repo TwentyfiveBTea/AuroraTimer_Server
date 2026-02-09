@@ -25,8 +25,8 @@
         <hutool.version>5.8.24</hutool.version>
         <jjwt.version>0.12.3</jjwt.version>
         <aliyun.oss.version>3.17.4</aliyun.oss.version>
-        <validation-api.version>2.0.1.Final</validation-api.version>
-        <servlet-api.version>4.0.1</servlet-api.version>
+        <validation-api.version>3.0.2</validation-api.version>
+        <servlet-api.version>6.0.0</servlet-api.version>
     </properties>
 
     <dependencies>
@@ -91,10 +91,10 @@
             <version>8.0.1.Final</version>
         </dependency>
 
-        <!-- Servlet API (javax.servlet) -->
+        <!-- Servlet API (Jakarta Servlet) -->
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
             <version>${servlet-api.version}</version>
             <scope>provided</scope>
         </dependency>

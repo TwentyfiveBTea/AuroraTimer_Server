@@ -33,7 +33,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/auth/login",
                         "/auth/register",
-                        "/auth/forgot-password"
+                        "/auth/reset-password"
                 ); // 无需任何权限
     }
 }

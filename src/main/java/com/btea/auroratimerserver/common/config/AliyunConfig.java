@@ -26,12 +26,6 @@ public class AliyunConfig {
     private String accessKeySecret;
 
     /**
-     * 阿里云云服务所在的数据中心地域
-     */
-    @Value("${aliyun.smsCode.region-id}")
-    private String regionId;
-
-    /**
      * endpoint
      */
     @Value("${aliyun.oss.endpoint}")
