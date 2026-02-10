@@ -22,7 +22,9 @@ public enum BaseErrorCode implements IErrorCode {
     // 业务逻辑错误码
     USER_REGISTERED("0000300", "用户已注册"),
     PASSWORD_NOT_MATCH("0000301", "两次密码不一致"),
-    USER_NOT_FOUND("0000302", "用户不存在");
+    USER_NOT_FOUND("0000302", "用户不存在"),
+    TOKEN_INVALID("0000303", "Token已失效，请重新登录"),
+    ADMIN_PASSWORD_ERROR("0000304", "管理员密码错误");
 
     // 用户注册登陆错误码
     private final String code;
