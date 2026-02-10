@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import static com.btea.auroratimerserver.common.convention.errorcode.BaseErrorCode.TOKEN_INVALID;
+
 /**
  * @Author: TwentyFiveBTea
  * @Date: 2026/2/9 14:19
@@ -34,13 +36,18 @@ public class UserAuthInterceptor implements HandlerInterceptor {
 
         String token = jwtUtil.extractTokenFromHeader(authHeader);
 
+        // 检查 Token 是否在黑名单中
+        if (jwtUtil.isInBlacklist(token)) {
+            throw new ClientException(TOKEN_INVALID);
+        }
+
         // 验证 Token 是否有效
         if (!jwtUtil.validateToken(token)) {
             throw new ClientException("未登录或登录已过期");
         }
 
         // 解析用户信息并存入上下文
-        Long userId = jwtUtil.parseUserId(token);
+        String userId = jwtUtil.parseUserId(token);
         UserContext.setCurrentUserId(userId);
 
         return true;

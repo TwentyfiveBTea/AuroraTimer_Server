@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import static com.btea.auroratimerserver.common.convention.errorcode.BaseErrorCode.TOKEN_INVALID;
+
 /**
  * @Author: TwentyFiveBTea
  * @Date: 2026/2/9 14:27
@@ -23,13 +25,16 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
 
-    private static final String ADMIN_ROLE = "admin";
-
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         // 从请求头提取 Token
         String authHeader = request.getHeader("Authorization");
         String token = jwtUtil.extractTokenFromHeader(authHeader);
+
+        // 检查 Token 是否在黑名单中
+        if (jwtUtil.isInBlacklist(token)) {
+            throw new ClientException(TOKEN_INVALID);
+        }
 
         // 验证 Token 是否有效
         if (!jwtUtil.validateToken(token)) {
@@ -38,7 +43,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 
         // 验证是否是管理员
         JwtRoleEnum role = jwtUtil.parseRole(token);
-        if (!ADMIN_ROLE.equals(role)) {
+        if (!JwtRoleEnum.ADMIN.getRole().equals(role.getRole())) {
             log.warn("非管理员尝试访问后台: 用户ID={}, 请求路径={}",
                     jwtUtil.parseUserId(token),
                     request.getRequestURI());
@@ -46,7 +51,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
         }
 
         // 存入上下文
-        Long userId = jwtUtil.parseUserId(token);
+        String userId = jwtUtil.parseUserId(token);
         UserContext.setCurrentUserId(userId);
         UserContext.setCurrentUserRole(role);
 
