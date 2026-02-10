@@ -1,5 +1,7 @@
 package com.btea.auroratimerserver.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,10 +50,11 @@ public class NotificationsDO {
     /**
      * 会议时间
      */
-    private Date meetingTime;
+    private String meetingTime;
 
     /**
      * 创建时间
      */
+    @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 }

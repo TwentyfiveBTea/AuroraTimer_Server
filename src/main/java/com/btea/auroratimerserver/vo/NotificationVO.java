@@ -1,5 +1,6 @@
 package com.btea.auroratimerserver.vo;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.Date;
@@ -7,9 +8,10 @@ import java.util.Date;
 /**
  * @Author: TwentyFiveBTea
  * @Date: 2026/2/10 19:33
- * @Description: 全部通知视图
+ * @Description: 通知视图
  */
 @Data
+@Builder
 public class NotificationVO {
 
     /**
