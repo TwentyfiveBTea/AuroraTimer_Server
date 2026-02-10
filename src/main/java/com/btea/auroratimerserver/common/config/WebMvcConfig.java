@@ -25,7 +25,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 管理员专用接口（需要 admin 权限）
         registry.addInterceptor(adminAuthInterceptor)
-                .addPathPatterns("/admin/**");
+                .addPathPatterns("/admin/auth/logout",
+                        "/admin/notifications");
 
         // 普通用户接口（需要 user 权限）
         registry.addInterceptor(authInterceptor)
@@ -33,7 +34,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/auth/login",
                         "/auth/register",
-                        "/auth/reset-password"
+                        "/auth/reset-password",
+                        "/admin/auth/login"
                 ); // 无需任何权限
     }
 }

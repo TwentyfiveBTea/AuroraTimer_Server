@@ -27,6 +27,7 @@
         <aliyun.oss.version>3.17.4</aliyun.oss.version>
         <validation-api.version>3.0.2</validation-api.version>
         <servlet-api.version>6.0.0</servlet-api.version>
+        <redis.version>3.3.5</redis.version>
     </properties>
 
     <dependencies>
@@ -129,6 +130,12 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
+        </dependency>
+
+        <!-- Redis -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
     </dependencies>
 
