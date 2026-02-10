@@ -1,6 +1,7 @@
 package com.btea.auroratimerserver.common.util;
 
 import com.btea.auroratimerserver.common.config.JwtConfig;
+import com.btea.auroratimerserver.common.constant.RedisCacheConstant;
 import com.btea.auroratimerserver.common.convention.exception.ClientException;
 import com.btea.auroratimerserver.common.enums.JwtRoleEnum;
 import io.jsonwebtoken.Claims;
@@ -11,6 +12,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author: TwentyFiveBTea
@@ -30,9 +33,11 @@ public class JwtUtil {
 
     private final JwtConfig jwtConfig;
     private final SecretKey secretKey;
+    private final StringRedisTemplate stringRedisTemplate;
 
-    public JwtUtil(JwtConfig jwtConfig) {
+    public JwtUtil(JwtConfig jwtConfig, StringRedisTemplate stringRedisTemplate) {
         this.jwtConfig = jwtConfig;
+        this.stringRedisTemplate = stringRedisTemplate;
         this.secretKey = Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
@@ -101,10 +106,10 @@ public class JwtUtil {
     /**
      * 解析用户 ID
      */
-    public Long parseUserId(String token) {
+    public String parseUserId(String token) {
         Claims claims = parseToken(token);
         try {
-            return Long.parseLong(claims.getSubject());
+            return claims.getSubject();
         } catch (NumberFormatException e) {
             throw new ClientException("Token用户ID格式错误");
         }
@@ -194,5 +199,32 @@ public class JwtUtil {
         claimsMap.remove("exp");
 
         return generateToken(subject, roleCode);
+    }
+
+    /**
+     * 将 Token 加入黑名单
+     *
+     * @param token JWT Token
+     */
+    public void addToBlacklist(String token) {
+        Claims claims = parseToken(token);
+        long expiration = claims.getExpiration().getTime() - System.currentTimeMillis();
+
+        if (expiration > 0) {
+            String key = RedisCacheConstant.TOKEN_BLACKLIST_KEY + token;
+            stringRedisTemplate.opsForValue().set(key, "1", expiration, TimeUnit.MILLISECONDS);
+            log.info("Token 已加入黑名单: {}", key);
+        }
+    }
+
+    /**
+     * 检查 Token 是否在黑名单中
+     *
+     * @param token JWT Token
+     * @return true 表示在黑名单中（Token 已失效）
+     */
+    public boolean isInBlacklist(String token) {
+        String key = RedisCacheConstant.TOKEN_BLACKLIST_KEY + token;
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(key));
     }
 }
