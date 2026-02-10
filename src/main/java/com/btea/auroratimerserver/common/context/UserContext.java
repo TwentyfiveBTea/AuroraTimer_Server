@@ -9,20 +9,20 @@ import com.btea.auroratimerserver.common.enums.JwtRoleEnum;
  */
 public class UserContext {
 
-    private static final ThreadLocal<Long> USER_ID_THREAD_LOCAL = new ThreadLocal<>();
+    private static final ThreadLocal<String> USER_ID_THREAD_LOCAL = new ThreadLocal<>();
     private static final ThreadLocal<JwtRoleEnum> USER_ROLE_THREAD_LOCAL = new ThreadLocal<>();
 
     /**
      * 设置当前用户ID
      */
-    public static void setCurrentUserId(Long userId) {
+    public static void setCurrentUserId(String userId) {
         USER_ID_THREAD_LOCAL.set(userId);
     }
 
     /**
      * 获取当前用户ID
      */
-    public static Long getCurrentUserId() {
+    public static String getCurrentUserId() {
         return USER_ID_THREAD_LOCAL.get();
     }
 
