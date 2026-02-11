@@ -1,5 +1,6 @@
 package com.btea.auroratimerserver.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -9,23 +10,25 @@ import com.btea.auroratimerserver.common.context.UserContext;
 import com.btea.auroratimerserver.common.convention.exception.ClientException;
 import com.btea.auroratimerserver.common.util.AliyunOssUtil;
 import com.btea.auroratimerserver.common.util.JwtUtil;
+import com.btea.auroratimerserver.dao.entity.TimerSummaryDO;
 import com.btea.auroratimerserver.dao.entity.UsersDO;
+import com.btea.auroratimerserver.dao.mapper.TimerSummaryMapper;
 import com.btea.auroratimerserver.dao.mapper.UsersMapper;
 import com.btea.auroratimerserver.req.*;
 import com.btea.auroratimerserver.service.UsersServer;
 import com.btea.auroratimerserver.vo.UserInfoVO;
+import com.btea.auroratimerserver.vo.UserLoginInfoVO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Objects;
 import java.util.UUID;
 
-import static com.btea.auroratimerserver.common.constant.UserProfileConstant.DEFAULT_POSITION;
-import static com.btea.auroratimerserver.common.constant.UserProfileConstant.RESET_PASSWORD;
+import static com.btea.auroratimerserver.common.constant.UserProfileConstant.*;
 import static com.btea.auroratimerserver.common.convention.errorcode.BaseErrorCode.*;
 
 /**
@@ -42,6 +45,7 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
     private final AliyunOssUtil aliyunOssUtil;
     private final AdminConfig adminConfig;
     private final UsersMapper usersMapper;
+    private final TimerSummaryMapper timerSummaryMapper;
 
     /**
      * 用户注册
@@ -66,10 +70,18 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
                 .name(registerReq.getName())
                 .email(registerReq.getEmail())
                 .password(registerReq.getPassword())
+                .avatar(DEFAULT_AVATAR)
                 .direction(registerReq.getDirection())
                 .position(DEFAULT_POSITION)
                 .status(1)
                 .build());
+
+        // 将用户初始化到计时器总表中
+        timerSummaryMapper.insert(TimerSummaryDO.builder()
+                .id(UUID.randomUUID().toString())
+                .userId(registerReq.getUserId())
+                .build()
+        );
         log.info("用户注册成功");
     }
 
@@ -80,7 +92,7 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
      * @return token
      */
     @Override
-    public String login(LoginReq loginReq) {
+    public UserLoginInfoVO login(LoginReq loginReq) {
         LambdaQueryWrapper<UsersDO> queryWrapper = Wrappers.lambdaQuery(UsersDO.class);
         UsersDO user;
         // 判断 account 中是学号还是邮箱
@@ -100,10 +112,16 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
             throw new ClientException(USER_NOT_FOUND);
         }
         if (!Objects.equals(loginReq.getPassword(), user.getPassword())) {
-            throw new ClientException(PASSWORD_NOT_MATCH);
+            throw new ClientException(PASSWORD_ERROR);
         }
         log.info("用户登录成功，用户信息为: {}", user);
-        return jwtUtil.generateUserToken(user.getUserId());
+        String token = jwtUtil.generateUserToken(user.getUserId());
+        return UserLoginInfoVO.builder()
+                .token(token)
+                .userId(user.getUserId())
+                .name(user.getName())
+                .avatar(user.getAvatar())
+                .build();
     }
 
     /**
@@ -163,6 +181,7 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
      * @param requestParam 更新请求参数
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateProfile(UpdateProfileReq requestParam) {
         log.info("更新用户资料: userId={}", requestParam.getUserId());
 
@@ -178,15 +197,22 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
         LambdaUpdateWrapper<UsersDO> updateWrapper = Wrappers.lambdaUpdate(UsersDO.class)
                 .eq(UsersDO::getUserId, requestParam.getUserId());
 
-        if (requestParam.getDirection() != null) {
+        if (StrUtil.isNotBlank(requestParam.getDirection())) {
             updateWrapper.set(UsersDO::getDirection, requestParam.getDirection());
             isProfileUpdated = true;
         }
-        if (requestParam.getPosition() != null) {
+        if (StrUtil.isNotBlank(requestParam.getPosition())) {
             updateWrapper.set(UsersDO::getPosition, requestParam.getPosition());
             isProfileUpdated = true;
         }
-        if (requestParam.getEmail() != null) {
+        if (StrUtil.isNotBlank(requestParam.getEmail())) {
+            // 检查邮箱是否已被其他用户使用
+            LambdaQueryWrapper<UsersDO> emailWrapper = Wrappers.lambdaQuery(UsersDO.class)
+                    .eq(UsersDO::getEmail, requestParam.getEmail())
+                    .ne(UsersDO::getUserId, requestParam.getUserId());
+            if (usersMapper.exists(emailWrapper)) {
+                throw new ClientException(EMAIL_EXIST);
+            }
             updateWrapper.set(UsersDO::getEmail, requestParam.getEmail());
             isProfileUpdated = true;
         }
@@ -197,8 +223,8 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
         }
 
         // 更新密码
-        if (StringUtils.hasText(requestParam.getCurrentPassword())
-                && StringUtils.hasText(requestParam.getNewPassword())) {
+        if (StrUtil.isNotBlank(requestParam.getCurrentPassword())
+                && StrUtil.isNotBlank(requestParam.getNewPassword())) {
             if (!requestParam.getCurrentPassword().equals(user.getPassword())) {
                 throw new ClientException(PASSWORD_NOT_MATCH);
             }
@@ -219,7 +245,7 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
     public void uploadAvatar(MultipartFile file) {
         String currentUserId = UserContext.getCurrentUserId();
         String avatarUrl = aliyunOssUtil.uploadAvatar(file, currentUserId);
-        UsersDO userDO = new UsersDO().builder()
+        UsersDO userDO = UsersDO.builder()
                 .avatar(avatarUrl)
                 .build();
         LambdaUpdateWrapper<UsersDO> updateWrapper = Wrappers.lambdaUpdate(UsersDO.class)

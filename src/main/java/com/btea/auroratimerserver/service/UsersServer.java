@@ -2,12 +2,9 @@ package com.btea.auroratimerserver.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.btea.auroratimerserver.dao.entity.UsersDO;
-import com.btea.auroratimerserver.req.AdminLoginReq;
-import com.btea.auroratimerserver.req.LoginReq;
-import com.btea.auroratimerserver.req.RegisterReq;
-import com.btea.auroratimerserver.req.ResetPasswordReq;
-import com.btea.auroratimerserver.req.UpdateProfileReq;
+import com.btea.auroratimerserver.req.*;
 import com.btea.auroratimerserver.vo.UserInfoVO;
+import com.btea.auroratimerserver.vo.UserLoginInfoVO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,7 +28,7 @@ public interface UsersServer extends IService<UsersDO> {
      * @param loginReq 登录请求参数
      * @return token
      */
-    String login(LoginReq loginReq);
+    UserLoginInfoVO login(LoginReq loginReq);
 
     /**
      * 用户忘记密码
