@@ -2,13 +2,10 @@ package com.btea.auroratimerserver.controller;
 
 import com.btea.auroratimerserver.common.convention.result.Result;
 import com.btea.auroratimerserver.common.convention.result.Results;
-import com.btea.auroratimerserver.req.AdminLoginReq;
-import com.btea.auroratimerserver.req.LoginReq;
-import com.btea.auroratimerserver.req.RegisterReq;
-import com.btea.auroratimerserver.req.ResetPasswordReq;
-import com.btea.auroratimerserver.req.UpdateProfileReq;
+import com.btea.auroratimerserver.req.*;
 import com.btea.auroratimerserver.service.UsersServer;
 import com.btea.auroratimerserver.vo.UserInfoVO;
+import com.btea.auroratimerserver.vo.UserLoginInfoVO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +42,7 @@ public class UsersController {
      * @return token
      */
     @PostMapping("/auth/login")
-    public Result<String> login(@RequestBody @Valid LoginReq requestParam) {
+    public Result<UserLoginInfoVO> login(@RequestBody @Valid LoginReq requestParam) {
         return Results.success(usersServer.login(requestParam));
     }
 
