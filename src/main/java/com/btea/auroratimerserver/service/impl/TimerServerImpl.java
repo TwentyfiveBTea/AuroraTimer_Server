@@ -11,6 +11,8 @@ import com.btea.auroratimerserver.dao.mapper.TimerRecordsMapper;
 import com.btea.auroratimerserver.dao.mapper.TimerSummaryMapper;
 import com.btea.auroratimerserver.req.TimeAddReq;
 import com.btea.auroratimerserver.service.TimerServer;
+import com.btea.auroratimerserver.vo.CheckInRankingOtherVO;
+import com.btea.auroratimerserver.vo.CheckInRankingVO;
 import com.btea.auroratimerserver.vo.TimeAddVO;
 import com.btea.auroratimerserver.vo.TimerStatusVO;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +21,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.temporal.WeekFields;
 import java.util.*;
 
@@ -240,6 +240,71 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
     @Override
     public Integer getTimingUsersCount() {
         Set<String> onlineUsers = stringRedisTemplate.opsForSet().members(RedisCacheConstant.ONLINE_USERS_KEY);
-        return onlineUsers != null ? onlineUsers.size() : 0;
+        if (onlineUsers == null || onlineUsers.isEmpty()) {
+            return 0;
+        }
+
+        // 遍历所有用户，检查计时状态 key 是否存在
+        int count = 0;
+        for (String userId : onlineUsers) {
+            String statusKey = RedisCacheConstant.TIMER_STATUS_KEY + userId;
+            if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(statusKey))) {
+                count++;
+            } else {
+                // 清理过期用户
+                stringRedisTemplate.opsForSet().remove(RedisCacheConstant.ONLINE_USERS_KEY, userId);
+            }
+        }
+        return count;
+    }
+
+    /**
+     * 获取排行榜
+     *
+     * @param weekOffset 周偏移量：0=本周, -1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     */
+    @Override
+    public List<CheckInRankingVO> getLeaderboard(int weekOffset) {
+        Date[] timeRange = getWeekTimeRange(weekOffset);
+        return timerSummaryMapper.selectLeaderboardByWeek(timeRange[0], timeRange[1]);
+    }
+
+    /**
+     * 获取排行榜的其他数据
+     *
+     * @param weekOffset 周偏移量：0=本周, -1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     */
+    @Override
+    public CheckInRankingOtherVO getLeaderboardOther(int weekOffset) {
+        Date[] timeRange = getWeekTimeRange(weekOffset);
+        CheckInRankingOtherVO result = timerSummaryMapper.selectLeaderboardOtherByWeek(timeRange[0], timeRange[1]);
+        if (result == null) {
+            return CheckInRankingOtherVO.builder()
+                    .avgOnlineDuration(0)
+                    .weeklyGoalProgress(0.0)
+                    .build();
+        }
+        return result;
+    }
+
+    /**
+     * 周偏移量转时间范围
+     *
+     * @param weekOffset 0=本周, -1=上周, -2=上上周...
+     * @return [startTime, endTime]
+     */
+    private Date[] getWeekTimeRange(int weekOffset) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(WeekFields.ISO.getFirstDayOfWeek());
+        LocalDate targetMonday = monday.plusWeeks(weekOffset);
+        LocalDate targetSunday = targetMonday.plusDays(6);
+
+        LocalDateTime startOfWeek = targetMonday.atStartOfDay();
+        LocalDateTime endOfWeek = targetSunday.atTime(23, 59, 59);
+
+        return new Date[]{
+                Date.from(startOfWeek.atZone(ZoneId.systemDefault()).toInstant()),
+                Date.from(endOfWeek.atZone(ZoneId.systemDefault()).toInstant())
+        };
     }
 }

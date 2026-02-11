@@ -68,6 +68,7 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
                 .id(UUID.randomUUID().toString())
                 .userId(registerReq.getUserId())
                 .name(registerReq.getName())
+                .grade("20" + registerReq.getUserId().substring(0, 2) + "级")
                 .email(registerReq.getEmail())
                 .password(registerReq.getPassword())
                 .avatar(DEFAULT_AVATAR)

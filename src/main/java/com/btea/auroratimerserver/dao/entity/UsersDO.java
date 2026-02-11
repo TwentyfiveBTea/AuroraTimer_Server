@@ -38,6 +38,11 @@ public class UsersDO {
     private String name;
 
     /**
+     * 年级
+     */
+    private String grade;
+
+    /**
      * 邮箱
      */
     private String email;

@@ -6,7 +6,7 @@ import lombok.Data;
 /**
  * @Author: TwentyFiveBTea
  * @Date: 2026/2/11 20:49
- * @Description: 排行榜视图
+ * @Description: 打卡排行视图
  */
 @Data
 @Builder

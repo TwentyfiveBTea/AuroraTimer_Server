@@ -4,10 +4,14 @@ import com.btea.auroratimerserver.common.convention.result.Result;
 import com.btea.auroratimerserver.common.convention.result.Results;
 import com.btea.auroratimerserver.req.TimeAddReq;
 import com.btea.auroratimerserver.service.TimerServer;
+import com.btea.auroratimerserver.vo.CheckInRankingOtherVO;
+import com.btea.auroratimerserver.vo.CheckInRankingVO;
 import com.btea.auroratimerserver.vo.TimeAddVO;
 import com.btea.auroratimerserver.vo.TimerStatusVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @Author: TwentyFiveBTea
@@ -93,5 +97,31 @@ public class TimerController {
     @GetMapping("/timer/timingUsers")
     public Result<Integer> getTimingUsersCount() {
         return Results.success(timerServer.getTimingUsersCount());
+    }
+
+    /**
+     * 获取打卡排行榜
+     *
+     * @param weekOffset 周偏移量：0=本周, -1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     * @return 打卡排行榜
+     */
+    @GetMapping("/leaderboard")
+    public Result<List<CheckInRankingVO>> getLeaderboard(
+            @RequestParam(value = "weekOffset", defaultValue = "0") int weekOffset
+    ) {
+        return Results.success(timerServer.getLeaderboard(weekOffset));
+    }
+
+    /**
+     * 获取排行榜的其他数据
+     *
+     * @param weekOffset 周偏移量：0=本周, -1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     * @return 打卡排行榜的其他数据
+     */
+    @GetMapping("/leaderboard/other")
+    public Result<CheckInRankingOtherVO> getLeaderboardOther(
+            @RequestParam(value = "weekOffset", defaultValue = "0") int weekOffset
+    ) {
+        return Results.success(timerServer.getLeaderboardOther(weekOffset));
     }
 }

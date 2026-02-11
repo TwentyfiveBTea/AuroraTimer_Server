@@ -3,8 +3,12 @@ package com.btea.auroratimerserver.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.btea.auroratimerserver.dao.entity.TimerRecordsDO;
 import com.btea.auroratimerserver.req.TimeAddReq;
+import com.btea.auroratimerserver.vo.CheckInRankingOtherVO;
+import com.btea.auroratimerserver.vo.CheckInRankingVO;
 import com.btea.auroratimerserver.vo.TimeAddVO;
 import com.btea.auroratimerserver.vo.TimerStatusVO;
+
+import java.util.List;
 
 /**
  * @Author: TwentyFiveBTea
@@ -23,7 +27,7 @@ public interface TimerServer extends IService<TimerRecordsDO> {
 
     /**
      * 同步工时到服务器
-     *
+     * <p>
      * 核心逻辑：
      * 1. 首次打卡：创建新记录，返回本次秒数
      * 2. 正常补时（间隔 < 900秒）：补时 = 实际经过的秒数
@@ -70,4 +74,20 @@ public interface TimerServer extends IService<TimerRecordsDO> {
      * @return 在线人数
      */
     Integer getTimingUsersCount();
+
+    /**
+     * 获取排行榜
+     *
+     * @param weekOffset 周偏移量：0=本周, -1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     * @return 排行榜
+     */
+    List<CheckInRankingVO> getLeaderboard(int weekOffset);
+
+    /**
+     * 获取排行榜的其他数据
+     *
+     * @param weekOffset 周偏移量：0=本周, -1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     * @return 排行榜
+     */
+    CheckInRankingOtherVO getLeaderboardOther(int weekOffset);
 }
