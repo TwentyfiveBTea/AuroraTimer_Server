@@ -16,4 +16,9 @@ public class UserProfileConstant {
      * 默认密码
      */
     public static final String RESET_PASSWORD = "Aurora666";
+
+    /**
+     * 默认头像
+     */
+    public static final String DEFAULT_AVATAR = "https://auroratimer.oss-cn-shenzhen.aliyuncs.com/avatar/dufault.jpg";
 }
