@@ -1,5 +1,7 @@
 package com.btea.auroratimerserver.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +19,7 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@TableName("times_summary")
+@TableName("timer_summary")
 public class TimerSummaryDO {
 
     /**
@@ -48,10 +50,12 @@ public class TimerSummaryDO {
     /**
      * 创建时间
      */
-    private Date createdTime;
+    @TableField(fill = FieldFill.INSERT)
+    private Date createTime;
 
     /**
      * 更新时间
      */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private Date updateTime;
 }
