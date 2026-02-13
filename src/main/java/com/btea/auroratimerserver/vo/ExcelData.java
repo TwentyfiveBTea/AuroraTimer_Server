@@ -10,7 +10,7 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class ExeclData {
+public class ExcelData {
 
     /**
      * 姓名
@@ -33,12 +33,12 @@ public class ExeclData {
     private String position;
 
     /**
-     * 活跃度（活跃：1，退休：0，被淘汰：-1）
+     * 打卡时间
      */
-    private Integer status;
+    private Integer signInTime;
 
     /**
-     * 上周打卡时间
+     * 达标状态
      */
-    private Integer lastWeekSignInTime;
+    private String status;
 }
