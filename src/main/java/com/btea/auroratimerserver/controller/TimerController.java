@@ -2,12 +2,12 @@ package com.btea.auroratimerserver.controller;
 
 import com.btea.auroratimerserver.common.convention.result.Result;
 import com.btea.auroratimerserver.common.convention.result.Results;
+import com.btea.auroratimerserver.req.EditWeeklyTargetDurationReq;
+import com.btea.auroratimerserver.req.ExcelDataReq;
+import com.btea.auroratimerserver.req.SelectWeeklyTargetDurationReq;
 import com.btea.auroratimerserver.req.TimeAddReq;
 import com.btea.auroratimerserver.service.TimerServer;
-import com.btea.auroratimerserver.vo.CheckInRankingOtherVO;
-import com.btea.auroratimerserver.vo.CheckInRankingVO;
-import com.btea.auroratimerserver.vo.TimeAddVO;
-import com.btea.auroratimerserver.vo.TimerStatusVO;
+import com.btea.auroratimerserver.vo.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -123,5 +123,47 @@ public class TimerController {
             @RequestParam(value = "weekOffset", defaultValue = "0") int weekOffset
     ) {
         return Results.success(timerServer.getLeaderboardOther(weekOffset));
+    }
+
+    /**
+     * 获取处刑榜
+     *
+     * @return 处刑榜
+     */
+    @GetMapping("/timer/punishment")
+    public Result<List<PunishmentVO>> getPunishment() {
+        return Results.success(timerServer.getPunishment());
+    }
+
+    /**
+     * 导出计时数据
+     *
+     * @param requestParam 导出参数
+     * @return 导出的数据
+     */
+    @PostMapping("/admin/timer/exportTimerData")
+    public Result<List<ExcelData>> exportTimerData(@RequestBody ExcelDataReq requestParam) {
+        return Results.success(timerServer.getExcelData(requestParam));
+    }
+
+    /**
+     * 获取周目标时长
+     *
+     * @return 周目标时长
+     */
+    @PostMapping("/admin/timer/weeklyTargetDuration")
+    public Result<List<WeeklyTargetDurationVO>> getWeeklyTargetDuration(@RequestBody SelectWeeklyTargetDurationReq requestParam) {
+        return Results.success(timerServer.getWeeklyTargetDuration(requestParam));
+    }
+
+    /**
+     * 修改周目标时长
+     *
+     * @param requestParam 修改参数
+     */
+    @PostMapping("/admin/timer/editWeeklyTargetDuration")
+    public Result<Void> editWeeklyTargetDuration(@RequestBody List<EditWeeklyTargetDurationReq> requestParam) {
+        timerServer.editWeeklyTargetDuration(requestParam);
+        return Results.success();
     }
 }
