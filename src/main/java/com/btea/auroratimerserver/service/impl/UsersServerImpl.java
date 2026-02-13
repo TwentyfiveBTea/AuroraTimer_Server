@@ -16,7 +16,7 @@ import com.btea.auroratimerserver.dao.entity.UsersDO;
 import com.btea.auroratimerserver.dao.mapper.TimerSummaryMapper;
 import com.btea.auroratimerserver.dao.mapper.UsersMapper;
 import com.btea.auroratimerserver.req.*;
-import com.btea.auroratimerserver.service.UsersServer;
+import com.btea.auroratimerserver.service.UsersService;
 import com.btea.auroratimerserver.vo.UserInfoVO;
 import com.btea.auroratimerserver.vo.UserLoginInfoVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +42,7 @@ import static com.btea.auroratimerserver.common.convention.errorcode.BaseErrorCo
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implements UsersServer {
+public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implements UsersService {
 
     private final JwtUtil jwtUtil;
     private final AliyunOssUtil aliyunOssUtil;

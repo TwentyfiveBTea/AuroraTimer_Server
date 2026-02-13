@@ -6,7 +6,7 @@ import com.btea.auroratimerserver.req.EditWeeklyTargetDurationReq;
 import com.btea.auroratimerserver.req.ExcelDataReq;
 import com.btea.auroratimerserver.req.SelectWeeklyTargetDurationReq;
 import com.btea.auroratimerserver.req.TimeAddReq;
-import com.btea.auroratimerserver.service.TimerServer;
+import com.btea.auroratimerserver.service.TimerService;
 import com.btea.auroratimerserver.vo.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TimerController {
 
-    private final TimerServer timerServer;
+    private final TimerService timerService;
 
     /**
      * 获取计时器目标时长
@@ -32,7 +32,7 @@ public class TimerController {
      */
     @PostMapping("/timer/target")
     public Result<Integer> getTimerTarget(@RequestParam("userId") String userId) {
-        return Results.success(timerServer.getTimerTarget(userId));
+        return Results.success(timerService.getTimerTarget(userId));
     }
 
     /**
@@ -44,7 +44,7 @@ public class TimerController {
      */
     @PostMapping("/time/add")
     public Result<TimeAddVO> addTime(@RequestBody TimeAddReq requestParam) {
-        return Results.success(timerServer.addTime(requestParam));
+        return Results.success(timerService.addTime(requestParam));
     }
 
     /**
@@ -54,7 +54,7 @@ public class TimerController {
      */
     @PostMapping("/timer/start")
     public Result<Void> startTiming(@RequestParam String userId) {
-        timerServer.startTiming(userId);
+        timerService.startTiming(userId);
         return Results.success();
     }
 
@@ -65,7 +65,7 @@ public class TimerController {
      */
     @PostMapping("/timer/stop")
     public Result<Void> stopTiming(@RequestParam String userId) {
-        timerServer.stopTiming(userId);
+        timerService.stopTiming(userId);
         return Results.success();
     }
 
@@ -76,7 +76,7 @@ public class TimerController {
      */
     @GetMapping("/timer/status")
     public Result<TimerStatusVO> getTimerStatus(@RequestParam String userId) {
-        return Results.success(timerServer.getTimerStatus(userId));
+        return Results.success(timerService.getTimerStatus(userId));
     }
 
     /**
@@ -86,7 +86,7 @@ public class TimerController {
      */
     @PostMapping("/timer/heartbeat")
     public Result<Boolean> heartbeat(@RequestParam String userId) {
-        return Results.success(timerServer.heartbeat(userId));
+        return Results.success(timerService.heartbeat(userId));
     }
 
     /**
@@ -96,7 +96,7 @@ public class TimerController {
      */
     @GetMapping("/timer/timingUsers")
     public Result<Integer> getTimingUsersCount() {
-        return Results.success(timerServer.getTimingUsersCount());
+        return Results.success(timerService.getTimingUsersCount());
     }
 
     /**
@@ -109,7 +109,7 @@ public class TimerController {
     public Result<List<CheckInRankingVO>> getLeaderboard(
             @RequestParam(value = "weekOffset", defaultValue = "0") int weekOffset
     ) {
-        return Results.success(timerServer.getLeaderboard(weekOffset));
+        return Results.success(timerService.getLeaderboard(weekOffset));
     }
 
     /**
@@ -122,7 +122,7 @@ public class TimerController {
     public Result<CheckInRankingOtherVO> getLeaderboardOther(
             @RequestParam(value = "weekOffset", defaultValue = "0") int weekOffset
     ) {
-        return Results.success(timerServer.getLeaderboardOther(weekOffset));
+        return Results.success(timerService.getLeaderboardOther(weekOffset));
     }
 
     /**
@@ -132,7 +132,7 @@ public class TimerController {
      */
     @GetMapping("/timer/punishment")
     public Result<List<PunishmentVO>> getPunishment() {
-        return Results.success(timerServer.getPunishment());
+        return Results.success(timerService.getPunishment());
     }
 
     /**
@@ -143,7 +143,7 @@ public class TimerController {
      */
     @PostMapping("/admin/timer/exportTimerData")
     public Result<List<ExcelData>> exportTimerData(@RequestBody ExcelDataReq requestParam) {
-        return Results.success(timerServer.getExcelData(requestParam));
+        return Results.success(timerService.getExcelData(requestParam));
     }
 
     /**
@@ -153,7 +153,7 @@ public class TimerController {
      */
     @PostMapping("/admin/timer/weeklyTargetDuration")
     public Result<List<WeeklyTargetDurationVO>> getWeeklyTargetDuration(@RequestBody SelectWeeklyTargetDurationReq requestParam) {
-        return Results.success(timerServer.getWeeklyTargetDuration(requestParam));
+        return Results.success(timerService.getWeeklyTargetDuration(requestParam));
     }
 
     /**
@@ -163,7 +163,7 @@ public class TimerController {
      */
     @PostMapping("/admin/timer/editWeeklyTargetDuration")
     public Result<Void> editWeeklyTargetDuration(@RequestBody List<EditWeeklyTargetDurationReq> requestParam) {
-        timerServer.editWeeklyTargetDuration(requestParam);
+        timerService.editWeeklyTargetDuration(requestParam);
         return Results.success();
     }
 }

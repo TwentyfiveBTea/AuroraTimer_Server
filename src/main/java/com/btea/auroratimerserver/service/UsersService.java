@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
  * @Date: 2026/2/9 16:32
  * @Description: 用户接口层
  */
-public interface UsersServer extends IService<UsersDO> {
+public interface UsersService extends IService<UsersDO> {
 
     /**
      * 用户注册

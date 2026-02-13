@@ -15,7 +15,7 @@ import java.util.List;
  * @Date: 2026/2/11 14:10
  * @Description: 计时器接口层
  */
-public interface TimerServer extends IService<TimerRecordsDO> {
+public interface TimerService extends IService<TimerRecordsDO> {
 
     /**
      * 获取计时器目标时长

@@ -13,7 +13,7 @@ import com.btea.auroratimerserver.req.EditWeeklyTargetDurationReq;
 import com.btea.auroratimerserver.req.ExcelDataReq;
 import com.btea.auroratimerserver.req.SelectWeeklyTargetDurationReq;
 import com.btea.auroratimerserver.req.TimeAddReq;
-import com.btea.auroratimerserver.service.TimerServer;
+import com.btea.auroratimerserver.service.TimerService;
 import com.btea.auroratimerserver.vo.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecordsDO> implements TimerServer {
+public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecordsDO> implements TimerService {
 
     private final TimerRecordsMapper timerRecordsMapper;
     private final TimerSummaryMapper timerSummaryMapper;

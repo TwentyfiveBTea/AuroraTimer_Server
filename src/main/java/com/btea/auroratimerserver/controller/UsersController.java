@@ -3,7 +3,7 @@ package com.btea.auroratimerserver.controller;
 import com.btea.auroratimerserver.common.convention.result.Result;
 import com.btea.auroratimerserver.common.convention.result.Results;
 import com.btea.auroratimerserver.req.*;
-import com.btea.auroratimerserver.service.UsersServer;
+import com.btea.auroratimerserver.service.UsersService;
 import com.btea.auroratimerserver.vo.UserInfoVO;
 import com.btea.auroratimerserver.vo.UserLoginInfoVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UsersController {
 
-    private final UsersServer usersServer;
+    private final UsersService usersService;
 
     /**
      * 用户注册
@@ -31,7 +31,7 @@ public class UsersController {
      */
     @PostMapping("/auth/register")
     public Result<Void> register(@RequestBody @Valid RegisterReq requestParam) {
-        usersServer.register(requestParam);
+        usersService.register(requestParam);
         return Results.success();
     }
 
@@ -43,7 +43,7 @@ public class UsersController {
      */
     @PostMapping("/auth/login")
     public Result<UserLoginInfoVO> login(@RequestBody @Valid LoginReq requestParam) {
-        return Results.success(usersServer.login(requestParam));
+        return Results.success(usersService.login(requestParam));
     }
 
     /**
@@ -54,7 +54,7 @@ public class UsersController {
      */
     @PostMapping("/auth/reset-password")
     public Result<Void> resetPassword(@RequestBody @Valid ResetPasswordReq requestParam) {
-        usersServer.resetPassword(requestParam);
+        usersService.resetPassword(requestParam);
         return Results.success();
     }
 
@@ -66,7 +66,7 @@ public class UsersController {
      */
     @PostMapping("/auth/logout")
     public Result<Void> logout(HttpServletRequest request) {
-        usersServer.logout(request);
+        usersService.logout(request);
         return Results.success();
     }
 
@@ -78,7 +78,7 @@ public class UsersController {
      */
     @PostMapping("/users/{userId}")
     public Result<UserInfoVO> getUserInfo(@PathVariable("userId") String userId) {
-        return Results.success(usersServer.getUserInfo(userId));
+        return Results.success(usersService.getUserInfo(userId));
     }
 
     /**
@@ -89,7 +89,7 @@ public class UsersController {
      */
     @PutMapping("/users/profile")
     public Result<Void> updateProfile(@RequestBody UpdateProfileReq requestParam) {
-        usersServer.updateProfile(requestParam);
+        usersService.updateProfile(requestParam);
         return Results.success();
     }
 
@@ -101,7 +101,7 @@ public class UsersController {
      */
     @PostMapping("/users/avatar")
     public Result<Void> uploadAvatar(@RequestParam("file") MultipartFile file) {
-        usersServer.uploadAvatar(file);
+        usersService.uploadAvatar(file);
         return Results.success();
     }
 
@@ -113,7 +113,7 @@ public class UsersController {
      */
     @PostMapping("/admin/auth/login")
     public Result<String> adminLogin(@RequestBody @Valid AdminLoginReq requestParam) {
-        return Results.success(usersServer.adminLogin(requestParam));
+        return Results.success(usersService.adminLogin(requestParam));
     }
 
     /**
@@ -124,7 +124,7 @@ public class UsersController {
      */
     @PostMapping("/admin/auth/logout")
     public Result<Void> adminLogout(HttpServletRequest request) {
-        usersServer.adminLogout(request);
+        usersService.adminLogout(request);
         return Results.success();
     }
 }
