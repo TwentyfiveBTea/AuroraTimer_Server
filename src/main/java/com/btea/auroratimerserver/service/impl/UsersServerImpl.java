@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.btea.auroratimerserver.common.config.AdminConfig;
+import com.btea.auroratimerserver.common.constant.RedisCacheConstant;
 import com.btea.auroratimerserver.common.context.UserContext;
 import com.btea.auroratimerserver.common.convention.exception.ClientException;
 import com.btea.auroratimerserver.common.util.AliyunOssUtil;
@@ -21,13 +22,16 @@ import com.btea.auroratimerserver.vo.UserLoginInfoVO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import static com.btea.auroratimerserver.common.constant.RedisCacheConstant.ONLINE_EXPIRE_SECONDS;
 import static com.btea.auroratimerserver.common.constant.UserProfileConstant.*;
 import static com.btea.auroratimerserver.common.convention.errorcode.BaseErrorCode.*;
 
@@ -44,6 +48,7 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
     private final JwtUtil jwtUtil;
     private final AliyunOssUtil aliyunOssUtil;
     private final AdminConfig adminConfig;
+    private final StringRedisTemplate stringRedisTemplate;
     private final UsersMapper usersMapper;
     private final TimerSummaryMapper timerSummaryMapper;
 
@@ -64,6 +69,18 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
             throw new ClientException(PASSWORD_NOT_MATCH);
         }
 
+        // 根据学号判断专业
+        String majorNumber = registerReq.getUserId().substring(5, 7);
+        String major = switch (majorNumber) {
+            case "01" -> "计算机科学与技术";
+            case "02" -> "软件工程";
+            case "03" -> "通信工程";
+            case "04" -> "物联网工程";
+            case "08" -> "数据科学与大数据技术";
+            case "09" -> "网络空间安全";
+            default -> throw new ClientException("专业编号不存在: " + majorNumber);
+        };
+
         usersMapper.insert(UsersDO.builder()
                 .id(UUID.randomUUID().toString())
                 .userId(registerReq.getUserId())
@@ -72,15 +89,17 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
                 .email(registerReq.getEmail())
                 .password(registerReq.getPassword())
                 .avatar(DEFAULT_AVATAR)
+                .major(major)
                 .direction(registerReq.getDirection())
                 .position(DEFAULT_POSITION)
                 .status(1)
                 .build());
 
-        // 将用户初始化到计时器总表中
+        // 将用户初始化到计时器总表中notifications
         timerSummaryMapper.insert(TimerSummaryDO.builder()
                 .id(UUID.randomUUID().toString())
                 .userId(registerReq.getUserId())
+                .weeklyTargetDuration(registerReq.getDirection().equals("设计") ? 43200 : 64800)
                 .build()
         );
         log.info("用户注册成功");
@@ -117,6 +136,15 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
         }
         log.info("用户登录成功，用户信息为: {}", user);
         String token = jwtUtil.generateUserToken(user.getUserId());
+
+        // 登录时设置用户为在线（60秒过期）
+        stringRedisTemplate.opsForSet().add(RedisCacheConstant.ONLINE_USERS_KEY, user.getUserId());
+        stringRedisTemplate.expire(
+                RedisCacheConstant.ONLINE_USERS_KEY,
+                ONLINE_EXPIRE_SECONDS,
+                TimeUnit.SECONDS
+        );
+
         return UserLoginInfoVO.builder()
                 .token(token)
                 .userId(user.getUserId())

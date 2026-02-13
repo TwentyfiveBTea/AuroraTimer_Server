@@ -27,6 +27,11 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // 放行 OPTIONS 预检请求
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         // 从请求头提取 Token
         String authHeader = request.getHeader("Authorization");
         String token = jwtUtil.extractTokenFromHeader(authHeader);
