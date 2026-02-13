@@ -25,5 +25,5 @@ public class RedisCacheConstant {
     /**
      * 在线用户过期时间（秒）
      */
-    public static final long ONLINE_EXPIRE_SECONDS = 65L;
+    public static final long ONLINE_EXPIRE_SECONDS = 60L;
 }

@@ -58,6 +58,11 @@ public class UsersDO {
     private String avatar;
 
     /**
+     * 专业
+     */
+    private String major;
+
+    /**
      * 方向
      */
     private String direction;

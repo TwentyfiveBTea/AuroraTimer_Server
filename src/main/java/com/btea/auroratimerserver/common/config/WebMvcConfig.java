@@ -4,6 +4,7 @@ import com.btea.auroratimerserver.common.interceptor.AdminAuthInterceptor;
 import com.btea.auroratimerserver.common.interceptor.UserAuthInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -26,7 +27,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // 管理员专用接口（需要 admin 权限）
         registry.addInterceptor(adminAuthInterceptor)
                 .addPathPatterns("/admin/auth/logout",
-                        "/admin/notifications");
+                        "/admin/notifications",
+                        "/admin/timer/exportTimerData");
 
         // 普通用户接口（需要 user 权限）
         registry.addInterceptor(authInterceptor)
@@ -37,5 +39,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/auth/reset-password",
                         "/admin/auth/login"
                 ); // 无需任何权限
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOriginPatterns("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 }
