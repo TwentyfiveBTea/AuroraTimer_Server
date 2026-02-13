@@ -2,11 +2,11 @@ package com.btea.auroratimerserver.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.btea.auroratimerserver.dao.entity.TimerRecordsDO;
+import com.btea.auroratimerserver.req.EditWeeklyTargetDurationReq;
+import com.btea.auroratimerserver.req.ExcelDataReq;
+import com.btea.auroratimerserver.req.SelectWeeklyTargetDurationReq;
 import com.btea.auroratimerserver.req.TimeAddReq;
-import com.btea.auroratimerserver.vo.CheckInRankingOtherVO;
-import com.btea.auroratimerserver.vo.CheckInRankingVO;
-import com.btea.auroratimerserver.vo.TimeAddVO;
-import com.btea.auroratimerserver.vo.TimerStatusVO;
+import com.btea.auroratimerserver.vo.*;
 
 import java.util.List;
 
@@ -90,4 +90,34 @@ public interface TimerServer extends IService<TimerRecordsDO> {
      * @return 排行榜
      */
     CheckInRankingOtherVO getLeaderboardOther(int weekOffset);
+
+    /**
+     * 获取处刑榜
+     *
+     * @return 处刑榜
+     */
+    List<PunishmentVO> getPunishment();
+
+    /**
+     * 获取导出数据
+     *
+     * @param excelDataReq 导出数据请求
+     * @return 导出数据
+     */
+    List<ExcelData> getExcelData(ExcelDataReq excelDataReq);
+
+    /**
+     * 获取周目标时长
+     *
+     * @param selectWeeklyTargetDurationReq 查询周目标时长请求
+     * @return 周目标时长
+     */
+    List<WeeklyTargetDurationVO> getWeeklyTargetDuration(SelectWeeklyTargetDurationReq selectWeeklyTargetDurationReq);
+
+    /**
+     * 修改周目标时长
+     *
+     * @param editWeeklyTargetDurationReq 修改周目标时长请求
+     */
+    void editWeeklyTargetDuration(List<EditWeeklyTargetDurationReq> editWeeklyTargetDurationReq);
 }

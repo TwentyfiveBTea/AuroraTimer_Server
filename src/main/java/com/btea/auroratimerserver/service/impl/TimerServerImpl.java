@@ -9,21 +9,24 @@ import com.btea.auroratimerserver.dao.entity.TimerRecordsDO;
 import com.btea.auroratimerserver.dao.entity.TimerSummaryDO;
 import com.btea.auroratimerserver.dao.mapper.TimerRecordsMapper;
 import com.btea.auroratimerserver.dao.mapper.TimerSummaryMapper;
+import com.btea.auroratimerserver.req.EditWeeklyTargetDurationReq;
+import com.btea.auroratimerserver.req.ExcelDataReq;
+import com.btea.auroratimerserver.req.SelectWeeklyTargetDurationReq;
 import com.btea.auroratimerserver.req.TimeAddReq;
 import com.btea.auroratimerserver.service.TimerServer;
-import com.btea.auroratimerserver.vo.CheckInRankingOtherVO;
-import com.btea.auroratimerserver.vo.CheckInRankingVO;
-import com.btea.auroratimerserver.vo.TimeAddVO;
-import com.btea.auroratimerserver.vo.TimerStatusVO;
+import com.btea.auroratimerserver.vo.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
 import java.util.*;
+import java.util.concurrent.TimeUnit;;
 
 /**
  * @Author: TwentyFiveBTea
@@ -75,6 +78,14 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
 
         log.debug("同步工时: userId={}, seconds={}", userId, seconds);
 
+        // 刷新用户在线状态（延长60秒）
+        stringRedisTemplate.opsForSet().add(RedisCacheConstant.ONLINE_USERS_KEY, userId);
+        stringRedisTemplate.expire(
+                RedisCacheConstant.ONLINE_USERS_KEY,
+                RedisCacheConstant.ONLINE_EXPIRE_SECONDS,
+                TimeUnit.SECONDS
+        );
+
         // 查询是否有进行中的记录
         LambdaQueryWrapper<TimerRecordsDO> queryWrapper = Wrappers.lambdaQuery(TimerRecordsDO.class)
                 .eq(TimerRecordsDO::getUserId, userId)
@@ -97,10 +108,7 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
                     .isActive(1)
                     .build();
             timerRecordsMapper.insert(record);
-
             addedSeconds = seconds;
-
-            log.info("用户 {} 首次打卡: +{}秒", userId, addedSeconds);
         } else {
             // 已有记录，计算时间差
             long recordTime = record.getEndTime().getTime();
@@ -243,19 +251,7 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
         if (onlineUsers == null || onlineUsers.isEmpty()) {
             return 0;
         }
-
-        // 遍历所有用户，检查计时状态 key 是否存在
-        int count = 0;
-        for (String userId : onlineUsers) {
-            String statusKey = RedisCacheConstant.TIMER_STATUS_KEY + userId;
-            if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(statusKey))) {
-                count++;
-            } else {
-                // 清理过期用户
-                stringRedisTemplate.opsForSet().remove(RedisCacheConstant.ONLINE_USERS_KEY, userId);
-            }
-        }
-        return count;
+        return onlineUsers.size();
     }
 
     /**
@@ -285,6 +281,78 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
                     .build();
         }
         return result;
+    }
+
+    /**
+     * 获取处刑榜
+     */
+    @Override
+    public List<PunishmentVO> getPunishment() {
+        Date[] timeRange = getWeekTimeRange(-1);
+        return timerSummaryMapper.selectPunishment(timeRange[0], timeRange[1]);
+    }
+
+    /**
+     * 获取 Excel 数据
+     */
+    @Override
+    public List<ExcelData> getExcelData(ExcelDataReq excelDataReq) {
+        Date startTime = parseDate(excelDataReq.getStartTime());
+        Date endTime = parseDate(excelDataReq.getEndTime());
+        String grade = StringUtils.hasText(excelDataReq.getGrade()) ? excelDataReq.getGrade() : null;
+        String direction = StringUtils.hasText(excelDataReq.getDirection()) ? excelDataReq.getDirection() : null;
+        String position = StringUtils.hasText(excelDataReq.getPosition()) ? excelDataReq.getPosition() : null;
+
+        return timerSummaryMapper.selectExcelData(startTime, endTime, grade, direction, position);
+    }
+
+    /**
+     * 解析日期字符串为 Date 对象
+     */
+    private Date parseDate(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) {
+            return null;
+        }
+        try {
+            // 尝试解析日期时间格式
+            LocalDateTime dateTime = LocalDateTime.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            return Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+        } catch (Exception e) {
+            // 如果失败，尝试解析日期格式
+            LocalDate date = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        }
+    }
+
+    /**
+     * 获取周目标时长
+     */
+    @Override
+    public List<WeeklyTargetDurationVO> getWeeklyTargetDuration(SelectWeeklyTargetDurationReq selectWeeklyTargetDurationReq) {
+        // 获取查询条件
+        String name = StringUtils.hasText(selectWeeklyTargetDurationReq.getName())
+                ? selectWeeklyTargetDurationReq.getName() : null;
+        String grade = StringUtils.hasText(selectWeeklyTargetDurationReq.getGrade())
+                ? selectWeeklyTargetDurationReq.getGrade() : null;
+        String direction = StringUtils.hasText(selectWeeklyTargetDurationReq.getDirection())
+                ? selectWeeklyTargetDurationReq.getDirection() : null;
+        String position = StringUtils.hasText(selectWeeklyTargetDurationReq.getPosition())
+                ? selectWeeklyTargetDurationReq.getPosition() : null;
+
+        return timerSummaryMapper.selectWeeklyTargetDuration(name, grade, direction, position);
+    }
+
+    /**
+     * 修改周目标时长
+     */
+    @Override
+    public void editWeeklyTargetDuration(List<EditWeeklyTargetDurationReq> editWeeklyTargetDurationReqList) {
+        for (EditWeeklyTargetDurationReq list : editWeeklyTargetDurationReqList) {
+            LambdaUpdateWrapper<TimerSummaryDO> updateWrapper = Wrappers.lambdaUpdate(TimerSummaryDO.class)
+                    .eq(TimerSummaryDO::getUserId, list.getUserId())
+                    .set(TimerSummaryDO::getWeeklyTargetDuration, list.getNewWeeklyTargetDuration());
+            timerSummaryMapper.update(updateWrapper);
+        }
     }
 
     /**
