@@ -78,10 +78,10 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
 
         log.debug("同步工时: userId={}, seconds={}", userId, seconds);
 
-        // 刷新用户在线状态（延长60秒）
-        stringRedisTemplate.opsForSet().add(RedisCacheConstant.ONLINE_USERS_KEY, userId);
-        stringRedisTemplate.expire(
-                RedisCacheConstant.ONLINE_USERS_KEY,
+        // 刷新用户在线状态（每个用户独立的 key，延长60秒过期）
+        stringRedisTemplate.opsForValue().set(
+                RedisCacheConstant.USER_ONLINE_KEY + userId,
+                "1",
                 RedisCacheConstant.ONLINE_EXPIRE_SECONDS,
                 TimeUnit.SECONDS
         );
@@ -174,7 +174,13 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
      */
     @Override
     public void startTiming(String userId) {
-        stringRedisTemplate.opsForSet().add(RedisCacheConstant.ONLINE_USERS_KEY, userId);
+        // 设置用户在线状态（每个用户独立的 key，60秒过期）
+        stringRedisTemplate.opsForValue().set(
+                RedisCacheConstant.USER_ONLINE_KEY + userId,
+                "1",
+                RedisCacheConstant.ONLINE_EXPIRE_SECONDS,
+                java.util.concurrent.TimeUnit.SECONDS
+        );
         stringRedisTemplate.opsForValue().set(
                 RedisCacheConstant.TIMER_STATUS_KEY + userId,
                 "1",
@@ -189,7 +195,8 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
      */
     @Override
     public void stopTiming(String userId) {
-        stringRedisTemplate.opsForSet().remove(RedisCacheConstant.ONLINE_USERS_KEY, userId);
+        // 删除用户在线状态
+        stringRedisTemplate.delete(RedisCacheConstant.USER_ONLINE_KEY + userId);
         stringRedisTemplate.delete(RedisCacheConstant.TIMER_STATUS_KEY + userId);
 
         // 标记进行中的记录为完成
@@ -232,13 +239,13 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
      */
     @Override
     public Boolean heartbeat(String userId) {
+        // 设置用户在线状态（每个用户独立的 key，60秒过期）
         stringRedisTemplate.opsForValue().set(
-                RedisCacheConstant.TIMER_STATUS_KEY + userId,
+                RedisCacheConstant.USER_ONLINE_KEY + userId,
                 "1",
                 RedisCacheConstant.ONLINE_EXPIRE_SECONDS,
                 java.util.concurrent.TimeUnit.SECONDS
         );
-        stringRedisTemplate.opsForSet().add(RedisCacheConstant.ONLINE_USERS_KEY, userId);
         return true;
     }
 
@@ -247,11 +254,11 @@ public class TimerServerImpl extends ServiceImpl<TimerRecordsMapper, TimerRecord
      */
     @Override
     public Integer getTimingUsersCount() {
-        Set<String> onlineUsers = stringRedisTemplate.opsForSet().members(RedisCacheConstant.ONLINE_USERS_KEY);
-        if (onlineUsers == null || onlineUsers.isEmpty()) {
+        Set<String> keys = stringRedisTemplate.keys(RedisCacheConstant.USER_ONLINE_KEY + "*");
+        if (keys == null || keys.isEmpty()) {
             return 0;
         }
-        return onlineUsers.size();
+        return keys.size();
     }
 
     /**

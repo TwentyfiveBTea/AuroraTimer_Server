@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static com.btea.auroratimerserver.common.constant.RedisCacheConstant.ONLINE_EXPIRE_SECONDS;
 import static com.btea.auroratimerserver.common.constant.UserProfileConstant.*;
 import static com.btea.auroratimerserver.common.convention.errorcode.BaseErrorCode.*;
 
@@ -137,11 +136,11 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
         log.info("用户登录成功，用户信息为: {}", user);
         String token = jwtUtil.generateUserToken(user.getUserId());
 
-        // 登录时设置用户为在线（60秒过期）
-        stringRedisTemplate.opsForSet().add(RedisCacheConstant.ONLINE_USERS_KEY, user.getUserId());
-        stringRedisTemplate.expire(
-                RedisCacheConstant.ONLINE_USERS_KEY,
-                ONLINE_EXPIRE_SECONDS,
+        // 登录时设置用户为在线（每个用户独立的 key，60秒过期）
+        stringRedisTemplate.opsForValue().set(
+                RedisCacheConstant.USER_ONLINE_KEY + user.getUserId(),
+                "1",
+                RedisCacheConstant.ONLINE_EXPIRE_SECONDS,
                 TimeUnit.SECONDS
         );
 
@@ -181,6 +180,10 @@ public class UsersServerImpl extends ServiceImpl<UsersMapper, UsersDO> implement
     public void logout(HttpServletRequest request) {
         String token = jwtUtil.extractTokenFromHeader(request.getHeader("Authorization"));
         jwtUtil.addToBlacklist(token);
+
+        // 从 Redis 中删除用户在线状态
+        String userId = jwtUtil.parseUserId(token);
+        stringRedisTemplate.delete(RedisCacheConstant.USER_ONLINE_KEY + userId);
     }
 
     /**

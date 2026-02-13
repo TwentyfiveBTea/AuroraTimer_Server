@@ -13,8 +13,14 @@ public class RedisCacheConstant {
     public static final String TOKEN_BLACKLIST_KEY = "token:blacklist:";
 
     /**
-     * 在线用户集合（Set结构）
+     * 用户在线状态 Key（单个用户，用于独立过期）
      */
+    public static final String USER_ONLINE_KEY = "timer:online:user:";
+
+    /**
+     * 在线用户集合（Set结构）- 已弃用，使用 USER_ONLINE_KEY 代替
+     */
+    @Deprecated
     public static final String ONLINE_USERS_KEY = "timer:online:users";
 
     /**
