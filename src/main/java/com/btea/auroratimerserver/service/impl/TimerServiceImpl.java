@@ -19,14 +19,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
-import java.util.*;
-import java.util.concurrent.TimeUnit;;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+;
 
 /**
  * @Author: TwentyFiveBTea
@@ -70,7 +77,6 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
      * 3. 重新上线（间隔 >= 900秒）：只加固定的 60 秒
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public TimeAddVO addTime(TimeAddReq requestParam) {
         String userId = requestParam.getUserId();
         Integer seconds = requestParam.getSeconds();
