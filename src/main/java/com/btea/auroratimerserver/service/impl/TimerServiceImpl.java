@@ -165,6 +165,7 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
         LambdaQueryWrapper<TimerRecordsDO> weekQuery = Wrappers.lambdaQuery(TimerRecordsDO.class)
                 .eq(TimerRecordsDO::getUserId, userId)
                 .eq(TimerRecordsDO::getIsActive, 1)
+                .isNotNull(TimerRecordsDO::getEndTime)
                 .ge(TimerRecordsDO::getEndTime, startOfWeek)
                 .le(TimerRecordsDO::getEndTime, endOfWeek);
 
