@@ -92,14 +92,31 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
                 TimeUnit.SECONDS
         );
 
-        // 查询是否有进行中的记录
-        LambdaQueryWrapper<TimerRecordsDO> queryWrapper = Wrappers.lambdaQuery(TimerRecordsDO.class)
-                .eq(TimerRecordsDO::getUserId, userId)
-                .eq(TimerRecordsDO::getIsActive, 1)
-                .isNull(TimerRecordsDO::getEndTime)
-                .orderByDesc(TimerRecordsDO::getStartTime)
-                .last("LIMIT 1");
-        TimerRecordsDO record = timerRecordsMapper.selectOne(queryWrapper);
+        // === 优化：用 Redis 缓存判断是否有进行中的记录 ===
+        String ongoingKey = RedisCacheConstant.ONGOING_RECORD_KEY + userId;
+        String ongoingRecordId = stringRedisTemplate.opsForValue().get(ongoingKey);
+        TimerRecordsDO record = null;
+
+        if (ongoingRecordId != null) {
+            // Redis 存在，从数据库查询具体记录
+            record = timerRecordsMapper.selectById(ongoingRecordId);
+        }
+
+        if (record == null) {
+            // Redis 不存在或记录已失效，查询数据库（双重检查）
+            LambdaQueryWrapper<TimerRecordsDO> queryWrapper = Wrappers.lambdaQuery(TimerRecordsDO.class)
+                    .eq(TimerRecordsDO::getUserId, userId)
+                    .eq(TimerRecordsDO::getIsActive, 1)
+                    .isNull(TimerRecordsDO::getEndTime)
+                    .orderByDesc(TimerRecordsDO::getStartTime)
+                    .last("LIMIT 1");
+            record = timerRecordsMapper.selectOne(queryWrapper);
+
+            if (record != null) {
+                // 写入 Redis 缓存，1小时过期
+                stringRedisTemplate.opsForValue().set(ongoingKey, record.getId(), 1, java.util.concurrent.TimeUnit.HOURS);
+            }
+        }
 
         int addedSeconds;
 
@@ -144,8 +161,12 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
                 .setSql("week_seconds = week_seconds + " + addedSeconds);
         timerSummaryMapper.update(null, updateWrapper);
 
-        // 计算本周总时长
-        Integer serverWeekTime = getWeekTime(userId);
+        // 从汇总表获取本周总时长（更新后的值 = 原weekSeconds + addedSeconds）
+        TimerSummaryDO summary = timerSummaryMapper.selectOne(
+                Wrappers.lambdaQuery(TimerSummaryDO.class)
+                        .eq(TimerSummaryDO::getUserId, userId)
+        );
+        Integer serverWeekTime = (summary != null ? summary.getWeekSeconds() : 0) + addedSeconds;
 
         return TimeAddVO.builder()
                 .addedSeconds(addedSeconds)
@@ -154,8 +175,10 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
     }
 
     /**
-     * 计算本周总时长
+     * 计算本周总时长（从 records 表查询，用于排行榜等场景）
+     * 注意：addTime 已改用 summary 表直接读取，如无特殊需求不建议调用此方法
      */
+    @SuppressWarnings("unused")
     private Integer getWeekTime(String userId) {
         LocalDate now = LocalDate.now();
         LocalDate weekStart = now.with(WeekFields.ISO.getFirstDayOfWeek());
@@ -205,6 +228,8 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
         // 删除用户在线状态
         stringRedisTemplate.delete(RedisCacheConstant.USER_ONLINE_KEY + userId);
         stringRedisTemplate.delete(RedisCacheConstant.TIMER_STATUS_KEY + userId);
+        // 删除进行中的记录缓存
+        stringRedisTemplate.delete(RedisCacheConstant.ONGOING_RECORD_KEY + userId);
 
         // 标记进行中的记录为完成
         LambdaUpdateWrapper<TimerRecordsDO> updateWrapper = Wrappers.lambdaUpdate(TimerRecordsDO.class)

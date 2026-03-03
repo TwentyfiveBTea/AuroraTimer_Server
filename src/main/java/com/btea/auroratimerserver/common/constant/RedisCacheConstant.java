@@ -29,6 +29,11 @@ public class RedisCacheConstant {
     public static final String TIMER_STATUS_KEY = "timer:status:";
 
     /**
+     * 用户进行中的计时记录 Key（用于缓存当前记录ID，减少数据库查询）
+     */
+    public static final String ONGOING_RECORD_KEY = "timer:ongoing:";
+
+    /**
      * 在线用户过期时间（秒）
      */
     public static final long ONLINE_EXPIRE_SECONDS = 60L;
