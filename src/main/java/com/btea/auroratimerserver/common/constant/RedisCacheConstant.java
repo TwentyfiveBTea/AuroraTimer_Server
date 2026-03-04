@@ -30,8 +30,29 @@ public class RedisCacheConstant {
 
     /**
      * 用户进行中的计时记录 Key（用于缓存当前记录ID，减少数据库查询）
+     * 缓存格式: endTime|duration
      */
     public static final String ONGOING_RECORD_KEY = "timer:ongoing:";
+
+    /**
+     * 用户本周累计工时缓存 Key（用于减少数据库查询）
+     */
+    public static final String WEEK_SECONDS_KEY = "timer:week_seconds:";
+
+    /**
+     * 用户累计总工时缓存 Key（用于减少数据库查询）
+     */
+    public static final String TOTAL_SECONDS_KEY = "timer:total_seconds:";
+
+    /**
+     * 缓存过期时间（小时）
+     */
+    public static final long CACHE_EXPIRE_HOURS = 1L;
+
+    /**
+     * 周数据缓存过期时间（天）
+     */
+    public static final long WEEK_CACHE_EXPIRE_DAYS = 7L;
 
     /**
      * 在线用户过期时间（秒）

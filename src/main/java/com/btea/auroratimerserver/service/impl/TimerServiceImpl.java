@@ -75,6 +75,9 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
      * 1. 首次打卡：创建新记录，返回本次秒数
      * 2. 正常补时（间隔 < 900秒）：补时 = 实际经过的秒数
      * 3. 重新上线（间隔 >= 900秒）：只加固定的 60 秒
+     * <p>
+     * 优化：使用 Redis 缓存进行中的记录信息（endTime|duration）和周累计时间，
+     * 减少数据库查询次数，从 3-4 次降低到最多 2 次
      */
     @Override
     public TimeAddVO addTime(TimeAddReq requestParam) {
@@ -84,7 +87,7 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
 
         log.debug("同步工时: userId={}, seconds={}", userId, seconds);
 
-        // 刷新用户在线状态（每个用户独立的 key，延长60秒过期）
+        // 1. 刷新用户在线状态
         stringRedisTemplate.opsForValue().set(
                 RedisCacheConstant.USER_ONLINE_KEY + userId,
                 "1",
@@ -92,38 +95,52 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
                 TimeUnit.SECONDS
         );
 
-        // === 优化：用 Redis 缓存判断是否有进行中的记录 ===
+        // 2. 从 Redis 获取进行中的记录信息
         String ongoingKey = RedisCacheConstant.ONGOING_RECORD_KEY + userId;
-        String ongoingRecordId = stringRedisTemplate.opsForValue().get(ongoingKey);
-        TimerRecordsDO record = null;
+        String cachedRecord = stringRedisTemplate.opsForValue().get(ongoingKey);
 
-        if (ongoingRecordId != null) {
-            // Redis 存在，从数据库查询具体记录
-            record = timerRecordsMapper.selectById(ongoingRecordId);
+        Long cachedEndTime = null;
+        Integer cachedDuration = null;
+        String recordId = null;
+
+        if (cachedRecord != null && cachedRecord.contains("|")) {
+            // Redis 有缓存，解析缓存数据 (格式: recordId|endTime|duration)
+            String[] parts = cachedRecord.split("\\|");
+            if (parts.length == 3) {
+                recordId = parts[0];
+                cachedEndTime = Long.parseLong(parts[1]);
+                cachedDuration = Integer.parseInt(parts[2]);
+            }
         }
 
-        if (record == null) {
-            // Redis 不存在或记录已失效，查询数据库（双重检查）
+        int addedSeconds;
+
+        if (cachedEndTime == null) {
+            // Redis 没有缓存，查询数据库
             LambdaQueryWrapper<TimerRecordsDO> queryWrapper = Wrappers.lambdaQuery(TimerRecordsDO.class)
                     .eq(TimerRecordsDO::getUserId, userId)
                     .eq(TimerRecordsDO::getIsActive, 1)
                     .isNull(TimerRecordsDO::getEndTime)
                     .orderByDesc(TimerRecordsDO::getStartTime)
                     .last("LIMIT 1");
-            record = timerRecordsMapper.selectOne(queryWrapper);
+            TimerRecordsDO record = timerRecordsMapper.selectOne(queryWrapper);
 
             if (record != null) {
+                recordId = record.getId();
+                cachedEndTime = record.getEndTime().getTime();
+                cachedDuration = record.getDuration();
                 // 写入 Redis 缓存，1小时过期
-                stringRedisTemplate.opsForValue().set(ongoingKey, record.getId(), 1, java.util.concurrent.TimeUnit.HOURS);
+                stringRedisTemplate.opsForValue().set(ongoingKey,
+                        recordId + "|" + cachedEndTime + "|" + cachedDuration,
+                        RedisCacheConstant.CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
             }
         }
 
-        int addedSeconds;
-
-        if (record == null) {
+        if (cachedEndTime == null) {
             // 首次打卡
-            record = TimerRecordsDO.builder()
-                    .id(UUID.randomUUID().toString())
+            recordId = UUID.randomUUID().toString();
+            TimerRecordsDO record = TimerRecordsDO.builder()
+                    .id(recordId)
                     .userId(userId)
                     .startTime(new Date(now - seconds * 1000L))
                     .endTime(new Date(now))
@@ -131,12 +148,16 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
                     .isActive(1)
                     .build();
             timerRecordsMapper.insert(record);
+
+            // 更新 Redis 缓存
+            stringRedisTemplate.opsForValue().set(ongoingKey,
+                    recordId + "|" + now + "|" + seconds,
+                    RedisCacheConstant.CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+
             addedSeconds = seconds;
         } else {
             // 已有记录，计算时间差
-            long recordTime = record.getEndTime().getTime();
-            long intervalTime = now - recordTime;
-            long intervalSeconds = intervalTime / 1000;
+            long intervalSeconds = (now - cachedEndTime) / 1000;
 
             if (intervalSeconds < OFFLINE_THRESHOLD_SECONDS) {
                 // 正常补时
@@ -148,25 +169,46 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
                 log.info("用户 {} 重新上线: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
             }
 
-            // 更新记录
+            // 更新数据库记录
+            TimerRecordsDO record = new TimerRecordsDO();
+            record.setId(recordId);
             record.setEndTime(new Date(now));
-            record.setDuration(record.getDuration() + addedSeconds);
+            record.setDuration(cachedDuration + addedSeconds);
             timerRecordsMapper.updateById(record);
+
+            // 更新 Redis 缓存
+            stringRedisTemplate.opsForValue().set(ongoingKey,
+                    recordId + "|" + now + "|" + (cachedDuration + addedSeconds),
+                    RedisCacheConstant.CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
         }
 
-        // 更新汇总表
+        // 3. 更新汇总表
         LambdaUpdateWrapper<TimerSummaryDO> updateWrapper = Wrappers.lambdaUpdate(TimerSummaryDO.class)
                 .eq(TimerSummaryDO::getUserId, userId)
                 .setSql("total_seconds = total_seconds + " + addedSeconds)
                 .setSql("week_seconds = week_seconds + " + addedSeconds);
         timerSummaryMapper.update(null, updateWrapper);
 
-        // 从汇总表获取本周总时长（更新后的值 = 原weekSeconds + addedSeconds）
-        TimerSummaryDO summary = timerSummaryMapper.selectOne(
-                Wrappers.lambdaQuery(TimerSummaryDO.class)
-                        .eq(TimerSummaryDO::getUserId, userId)
-        );
-        Integer serverWeekTime = (summary != null ? summary.getWeekSeconds() : 0) + addedSeconds;
+        // 4. 从 Redis 缓存获取本周总时长（避免再查数据库）
+        String weekSecondsKey = RedisCacheConstant.WEEK_SECONDS_KEY + userId;
+        String cachedWeekSeconds = stringRedisTemplate.opsForValue().get(weekSecondsKey);
+
+        int serverWeekTime;
+        if (cachedWeekSeconds != null) {
+            // 缓存存在，直接累加
+            serverWeekTime = Integer.parseInt(cachedWeekSeconds) + addedSeconds;
+        } else {
+            // 缓存不存在，查询数据库一次
+            TimerSummaryDO summary = timerSummaryMapper.selectOne(
+                    Wrappers.lambdaQuery(TimerSummaryDO.class)
+                            .eq(TimerSummaryDO::getUserId, userId)
+            );
+            serverWeekTime = (summary != null ? summary.getWeekSeconds() : 0) + addedSeconds;
+        }
+
+        // 更新 Redis 缓存
+        stringRedisTemplate.opsForValue().set(weekSecondsKey, String.valueOf(serverWeekTime),
+                RedisCacheConstant.WEEK_CACHE_EXPIRE_DAYS, TimeUnit.DAYS);
 
         return TimeAddVO.builder()
                 .addedSeconds(addedSeconds)
@@ -230,6 +272,8 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
         stringRedisTemplate.delete(RedisCacheConstant.TIMER_STATUS_KEY + userId);
         // 删除进行中的记录缓存
         stringRedisTemplate.delete(RedisCacheConstant.ONGOING_RECORD_KEY + userId);
+        // 删除周累计时间缓存
+        stringRedisTemplate.delete(RedisCacheConstant.WEEK_SECONDS_KEY + userId);
 
         // 标记进行中的记录为完成
         LambdaUpdateWrapper<TimerRecordsDO> updateWrapper = Wrappers.lambdaUpdate(TimerRecordsDO.class)
