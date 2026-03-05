@@ -344,6 +344,11 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
      */
     @Override
     public List<CheckInRankingVO> getLeaderboard(int weekOffset) {
+        // weekOffset = 0 表示本周，从 timer_summary 表查询
+        if (weekOffset == 0) {
+            return timerSummaryMapper.selectLeaderboard();
+        }
+        // 其他周（-1、-2、-3、-4）从 timer_records 表实时 SUM
         Date[] timeRange = getWeekTimeRange(weekOffset);
         return timerSummaryMapper.selectLeaderboardByWeek(timeRange[0], timeRange[1]);
     }
@@ -355,6 +360,11 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
      */
     @Override
     public CheckInRankingOtherVO getLeaderboardOther(int weekOffset) {
+        // weekOffset = 0 表示本周，从 timer_summary 表查询
+        if (weekOffset == 0) {
+            return timerSummaryMapper.selectLeaderboardOther();
+        }
+        // 其他周（-1、-2、-3、-4）从 timer_records 表实时 SUM
         Date[] timeRange = getWeekTimeRange(weekOffset);
         CheckInRankingOtherVO result = timerSummaryMapper.selectLeaderboardOtherByWeek(timeRange[0], timeRange[1]);
         if (result == null) {
