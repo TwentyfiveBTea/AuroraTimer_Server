@@ -162,11 +162,11 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
             if (intervalSeconds < OFFLINE_THRESHOLD_SECONDS) {
                 // 正常补时：一次性补完离线期间的所有时间
                 addedSeconds = (int) intervalSeconds;
-                log.info("用户 {} 正常补时: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
+                // log.info("用户 {} 正常补时: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
             } else {
                 // 重新上线：一次性补完离线期间的所有时间
                 addedSeconds = (int) intervalSeconds;
-                log.info("用户 {} 重新上线: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
+                // log.info("用户 {} 重新上线: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
             }
 
             // 更新数据库记录
