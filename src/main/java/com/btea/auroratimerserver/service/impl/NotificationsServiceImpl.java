@@ -52,7 +52,10 @@ public class NotificationsServiceImpl extends ServiceImpl<NotificationsMapper, N
      */
     @Override
     public List<NotificationVO> getAllNotifications() {
-        List<NotificationsDO> notificationsDOList = notificationsMapper.selectList(null);
+        List<NotificationsDO> notificationsDOList = notificationsMapper.selectList(
+                Wrappers.lambdaQuery(NotificationsDO.class)
+                        .orderByDesc(NotificationsDO::getCreateTime)
+        );
         return notificationsDOList.stream().map(notificationsDO -> NotificationVO.builder()
                 .type(notificationsDO.getType())
                 .title(notificationsDO.getTitle())

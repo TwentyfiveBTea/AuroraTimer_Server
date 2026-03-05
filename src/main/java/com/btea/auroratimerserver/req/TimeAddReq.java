@@ -25,7 +25,7 @@ public class TimeAddReq {
     private String userId;
 
     /**
-     * 本次增加的秒数（前端固定传60）
+     * 本次增加的秒数（前端固定传1）
      */
     @Min(value = 1, message = "秒数必须大于0")
     private Integer seconds;

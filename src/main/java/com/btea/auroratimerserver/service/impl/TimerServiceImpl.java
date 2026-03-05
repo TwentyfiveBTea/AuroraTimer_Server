@@ -50,11 +50,6 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
     private final StringRedisTemplate stringRedisTemplate;
 
     /**
-     * 离线超时阈值（秒）- 15分钟
-     */
-    private static final long OFFLINE_THRESHOLD_SECONDS = 900L;
-
-    /**
      * 获取计时器目标时长
      *
      * @param userId 用户 ID
@@ -156,18 +151,8 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
 
             addedSeconds = seconds;
         } else {
-            // 已有记录，计算时间差
-            long intervalSeconds = (now - cachedEndTime) / 1000;
-
-            if (intervalSeconds < OFFLINE_THRESHOLD_SECONDS) {
-                // 正常补时：一次性补完离线期间的所有时间
-                addedSeconds = (int) intervalSeconds;
-                // log.info("用户 {} 正常补时: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
-            } else {
-                // 重新上线：一次性补完离线期间的所有时间
-                addedSeconds = (int) intervalSeconds;
-                // log.info("用户 {} 重新上线: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
-            }
+            // 已有记录，直接累加前端传来的秒数
+            addedSeconds = seconds;
 
             // 更新数据库记录
             TimerRecordsDO record = new TimerRecordsDO();
