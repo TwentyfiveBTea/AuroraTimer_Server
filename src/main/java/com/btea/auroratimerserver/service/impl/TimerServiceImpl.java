@@ -160,12 +160,12 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
             long intervalSeconds = (now - cachedEndTime) / 1000;
 
             if (intervalSeconds < OFFLINE_THRESHOLD_SECONDS) {
-                // 正常补时
+                // 正常补时：一次性补完离线期间的所有时间
                 addedSeconds = (int) intervalSeconds;
                 log.info("用户 {} 正常补时: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
             } else {
-                // 重新上线
-                addedSeconds = seconds;
+                // 重新上线：一次性补完离线期间的所有时间
+                addedSeconds = (int) intervalSeconds;
                 log.info("用户 {} 重新上线: +{}秒 (间隔{}秒)", userId, addedSeconds, intervalSeconds);
             }
 
@@ -198,12 +198,12 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
             // 缓存存在，直接累加
             serverWeekTime = Integer.parseInt(cachedWeekSeconds) + addedSeconds;
         } else {
-            // 缓存不存在，查询数据库一次
+            // 缓存不存在，查询数据库一次（数据库已经是更新后的值，不需要再加 addedSeconds）
             TimerSummaryDO summary = timerSummaryMapper.selectOne(
                     Wrappers.lambdaQuery(TimerSummaryDO.class)
                             .eq(TimerSummaryDO::getUserId, userId)
             );
-            serverWeekTime = (summary != null ? summary.getWeekSeconds() : 0) + addedSeconds;
+            serverWeekTime = summary != null ? summary.getWeekSeconds() : 0;
         }
 
         // 更新 Redis 缓存
