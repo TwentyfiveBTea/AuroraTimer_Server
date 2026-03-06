@@ -62,7 +62,7 @@ public interface TimerSummaryMapper extends BaseMapper<TimerSummaryDO> {
     @Select("""
             SELECT
                 AVG(ts.week_seconds) AS avgOnlineDuration,
-                COUNT(CASE WHEN ts.week_seconds > ts.weekly_target_duration THEN 1 END) * 1.0
+                COUNT(CASE WHEN ts.week_seconds > ts.weekly_target_duration THEN 1 END) * 100.0
                 / NULLIF(COUNT(*), 0) AS weeklyGoalProgress
             FROM timer_summary ts
             INNER JOIN users u ON ts.user_id = u.user_id
@@ -124,7 +124,7 @@ public interface TimerSummaryMapper extends BaseMapper<TimerSummaryDO> {
     @Select("""
             SELECT
                 AVG(weekStats.weekSeconds) AS avgOnlineDuration,
-                COUNT(CASE WHEN weekStats.weekSeconds > weekStats.targetDuration THEN 1 END) * 1.0
+                COUNT(CASE WHEN weekStats.weekSeconds > weekStats.targetDuration THEN 1 END) * 100.0
                 / NULLIF(COUNT(*), 0) AS weeklyGoalProgress
             FROM (
                 SELECT
