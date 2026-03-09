@@ -325,32 +325,38 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
     /**
      * 获取排行榜
      *
-     * @param weekOffset 周偏移量：0=本周, -1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     * @param weekOffset 周偏移量：0=本周, 1=上周, 2=上上周, 3=上上上周, 4=上上上上周
      */
     @Override
     public List<CheckInRankingVO> getLeaderboard(int weekOffset) {
+        // 前端传正数，后端需要转为负数：1->-1, 2->-2, 3->-3, 4->-4
+        int adjustedOffset = normalizeWeekOffset(weekOffset);
+        
         // weekOffset = 0 表示本周，从 timer_summary 表查询
-        if (weekOffset == 0) {
+        if (adjustedOffset == 0) {
             return timerSummaryMapper.selectLeaderboard();
         }
         // 其他周（-1、-2、-3、-4）从 timer_records 表实时 SUM
-        Date[] timeRange = getWeekTimeRange(weekOffset);
+        Date[] timeRange = getWeekTimeRange(adjustedOffset);
         return timerSummaryMapper.selectLeaderboardByWeek(timeRange[0], timeRange[1]);
     }
 
     /**
      * 获取排行榜的其他数据
      *
-     * @param weekOffset 周偏移量：0=本周, -1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     * @param weekOffset 周偏移量：0=本周, 1=上周, 2=上上周, 3=上上上周, 4=上上上上周
      */
     @Override
     public CheckInRankingOtherVO getLeaderboardOther(int weekOffset) {
+        // 前端传正数，后端需要转为负数：1->-1, 2->-2, 3->-3, 4->-4
+        int adjustedOffset = normalizeWeekOffset(weekOffset);
+        
         // weekOffset = 0 表示本周，从 timer_summary 表查询
-        if (weekOffset == 0) {
+        if (adjustedOffset == 0) {
             return timerSummaryMapper.selectLeaderboardOther();
         }
         // 其他周（-1、-2、-3、-4）从 timer_records 表实时 SUM
-        Date[] timeRange = getWeekTimeRange(weekOffset);
+        Date[] timeRange = getWeekTimeRange(adjustedOffset);
         CheckInRankingOtherVO result = timerSummaryMapper.selectLeaderboardOtherByWeek(timeRange[0], timeRange[1]);
         if (result == null) {
             return CheckInRankingOtherVO.builder()
@@ -452,5 +458,20 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
                 Date.from(startOfWeek.atZone(ZoneId.systemDefault()).toInstant()),
                 Date.from(endOfWeek.atZone(ZoneId.systemDefault()).toInstant())
         };
+    }
+
+    /**
+     * 标准化周偏移量
+     * <p>
+     * 前端传正数：1=上周, 2=上上周, 3=上上上周, 4=上上上上周
+     * 后端用负数：-1=上周, -2=上上周, -3=上上上周, -4=上上上上周
+     * 此方法将正数转为负数，0保持不变
+     *
+     * @param weekOffset 前端传入的周偏移量
+     * @return 标准化后的周偏移量
+     */
+    private int normalizeWeekOffset(int weekOffset) {
+        // 如果是正数（前端传来的），转为负数；0 或负数保持不变
+        return weekOffset > 0 ? -weekOffset : weekOffset;
     }
 }
