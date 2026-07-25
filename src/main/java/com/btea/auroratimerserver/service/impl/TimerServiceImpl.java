@@ -1,4 +1,4 @@
-package com.btea.auroratimerserver.service.impl;
+﻿package com.btea.auroratimerserver.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -387,7 +387,27 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
         String direction = StringUtils.hasText(excelDataReq.getDirection()) ? excelDataReq.getDirection() : null;
         String position = StringUtils.hasText(excelDataReq.getPosition()) ? excelDataReq.getPosition() : null;
 
-        return timerSummaryMapper.selectExcelData(startTime, endTime, grade, direction, position);
+        List<ExcelData> dataList = timerSummaryMapper.selectExcelData(startTime, endTime, grade, direction, position);
+        dataList.forEach(d -> d.setSignInTime(convertSecondsToHHmmss(d.getSignInTime())));
+        return dataList;
+    }
+
+    /**
+     * 将秒数字符串转换为 HH:mm:ss 格式（支持超过24小时，如 &quot;25:00:00&quot;）
+     */
+    private String convertSecondsToHHmmss(String secondsStr) {
+        if (secondsStr == null || secondsStr.isEmpty()) {
+            return "00:00:00";
+        }
+        try {
+            int totalSeconds = Integer.parseInt(secondsStr);
+            long hours = totalSeconds / 3600;
+            int minutes = (totalSeconds % 3600) / 60;
+            int secs = totalSeconds % 60;
+            return String.format("%02d:%02d:%02d", hours, minutes, secs);
+        } catch (NumberFormatException e) {
+            return "00:00:00";
+        }
     }
 
     /**
