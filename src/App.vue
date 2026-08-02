@@ -1,12 +1,15 @@
 <template>
-  <router-view v-slot="{ Component }">
-    <transition name="fade" mode="out-in">
-      <component :is="Component" />
-    </transition>
-  </router-view>
-  
-  <!-- 全局 Toast 提示组件 -->
-  <Toast />
+  <div v-if="!authStore.authReady" class="app-loading">
+    <div class="app-loading__spinner"></div>
+    <p class="app-loading__text">正在加载...</p>
+  </div>
+  <template v-else>
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
+  </template>
 </template>
 
 <script setup>
@@ -15,7 +18,6 @@ import { onMounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { useAuthStore } from '@/stores/auth'
 import { useTimerStore } from '@/stores/timer'
-import Toast from '@/components/Toast.vue'
 
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
@@ -27,16 +29,9 @@ onMounted(async () => {
   // 初始化字体
   themeStore.initFont()
 
-  // 验证用户是否有效（如果用户在服务器上已被删除，会清除本地数据并跳转登录）
-  if (authStore.token) {
-    console.log('[App] 检测到 token，验证用户有效性...')
-    await authStore.fetchUser()
-    // 如果 fetchUser 验证失败（用户被删除），会清除数据并跳转到登录页
-    // 如果验证成功，isAuthenticated 仍然为 true，继续执行
-    if (!authStore.token) {
-      console.log('[App] 用户验证失败，已清除本地数据')
-      return // 停止后续初始化
-    }
+  await authStore.initFromStorage()
+  if (!authStore.token) {
+    return
   }
 
   // 全局计时器初始化 - 只在用户已登录时执行
@@ -80,5 +75,33 @@ onMounted(async () => {
 #app {
   width: 100%;
   height: 100vh;
+}
+
+.app-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: var(--color-bg-base);
+  gap: 16px;
+}
+
+.app-loading__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: app-spin 0.8s linear infinite;
+}
+
+@keyframes app-spin {
+  to { transform: rotate(360deg); }
+}
+
+.app-loading__text {
+  font-size: 14px;
+  color: var(--color-text-muted);
 }
 </style>

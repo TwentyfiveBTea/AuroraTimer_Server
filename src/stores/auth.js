@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { setStorage, getStorage, removeStorage } from '@/utils'
 import { authAPI, userAPI } from '@/api'
+import { createAuthInitializer } from './authInitialization'
 
 export const useAuthStore = defineStore('auth', () => {
   // ============ Router ============
@@ -10,6 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
   // ============ 状态 ============
   const user = ref(null)
   const token = ref(getStorage('auth_token', null))
+  const authReady = ref(false)
   const isLoading = ref(false)
   const error = ref(null)
   
@@ -166,7 +168,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     if (!token.value) {
       clearAllStorage()
-      return
+      return false
     }
     
     isLoading.value = true
@@ -177,8 +179,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (!userId) {
         console.warn('[Auth] 无法获取用户ID，清除所有本地数据')
         clearAllStorage()
-        window.location.href = '/login'
-        return
+        await router.replace('/login')
+        return false
       }
       
       const response = await userAPI.getUserInfo(userId)
@@ -196,7 +198,12 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('auth_userId', response.data.userId)
         // 缓存完整的用户信息
         localStorage.setItem('auth_userInfo', JSON.stringify(response.data))
+        return true
       }
+
+      clearAllStorage()
+      await router.replace('/login')
+      return false
     } catch (err) {
       error.value = err.message
       console.warn('获取用户信息失败:', err.message)
@@ -213,9 +220,8 @@ export const useAuthStore = defineStore('auth', () => {
           err.message?.includes('用户不存在') || err.message?.includes('无效')) {
         console.warn('[Auth] 检测到用户已被删除或token无效，清除所有本地数据')
         clearAllStorage()
-        // 跳转到登录页面
-        window.location.href = '/login'
-        return
+        await router.replace('/login')
+        return false
       }
       
       // 尝试从本地存储恢复用户信息（仅用于网络错误时的临时显示）
@@ -228,6 +234,7 @@ export const useAuthStore = defineStore('auth', () => {
           console.error('[Auth] 解析本地用户信息失败:', e)
         }
       }
+      return !!token.value && !!user.value
     } finally {
       isLoading.value = false
     }
@@ -335,39 +342,31 @@ export const useAuthStore = defineStore('auth', () => {
   }
   
   // ============ 初始化从本地存储恢复数据并验证 token ============
-  async function initFromStorage() {
-    // 尝试从 localStorage 恢复用户信息（直接使用 localStorage，避免 JSON 解析问题）
-    const savedUserInfo = localStorage.getItem('auth_userInfo')
-    const savedUserId = localStorage.getItem('auth_userId')
-    const savedToken = localStorage.getItem('auth_token')
-    
-    console.log('[Auth] initFromStorage 被调用')
-    console.log('[Auth] auth_token:', savedToken ? '已保存 (长度: ' + savedToken.length + ')' : '不存在')
-    console.log('[Auth] auth_userInfo:', savedUserInfo ? '已保存' : '不存在')
-    console.log('[Auth] auth_userId:', savedUserId || '不存在')
-    
-    if (savedToken) {
-      token.value = savedToken
-      console.log('[Auth] token 已恢复到响应式变量')
-      
-      // 立即验证 token 是否有效（从服务器获取用户信息）
-      // 如果服务器删除用户或 token 失效，会在 fetchUser 中自动清除本地数据
-      console.log('[Auth] 验证 token 有效性...')
-      await fetchUser()
-    } else {
-      // 没有 token，清除所有本地存储数据
-      console.log('[Auth] 无 token，清除所有本地数据')
-      clearAllStorage()
-    }
-    
-    if (savedUserInfo && !user.value) {
-      try {
-        user.value = JSON.parse(savedUserInfo)
-        console.log('[Auth] 已从本地存储恢复用户信息:', user.value)
-      } catch (e) {
-        console.error('[Auth] 解析本地用户信息失败:', e)
+  const initializeAuth = createAuthInitializer({
+    readSession: () => ({
+      token: localStorage.getItem('auth_token'),
+      userInfo: localStorage.getItem('auth_userInfo')
+    }),
+    restoreSession: (session) => {
+      token.value = session.token
+
+      if (session.userInfo) {
+        try {
+          user.value = JSON.parse(session.userInfo)
+        } catch (e) {
+          console.error('[Auth] 解析本地用户信息失败:', e)
+        }
       }
+    },
+    validateSession: fetchUser,
+    clearSession: clearAllStorage,
+    setReady: (value) => {
+      authReady.value = value
     }
+  })
+
+  function initFromStorage() {
+    return initializeAuth()
   }
   
   // 页面加载时初始化
@@ -378,6 +377,7 @@ export const useAuthStore = defineStore('auth', () => {
     // 状态
     user,
     token,
+    authReady,
     isLoading,
     error,
     

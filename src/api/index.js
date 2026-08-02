@@ -81,9 +81,11 @@ request.interceptors.response.use(
       
       switch (status) {
         case 401:
-          // 未授权，清除 token 并跳转到登录页
+          // Hash history is required in packaged Electron file:// pages.
           localStorage.removeItem('auth_token')
-          window.location.href = '/login'
+          localStorage.removeItem('auth_userId')
+          localStorage.removeItem('auth_userInfo')
+          window.location.hash = '#/login'
           break
         case 403:
           console.error('无权限访问')
