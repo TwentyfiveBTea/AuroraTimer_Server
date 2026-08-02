@@ -170,9 +170,9 @@ public interface TimerSummaryMapper extends BaseMapper<TimerSummaryDO> {
                 AND tr.end_time >= #{startTime}
                 AND tr.end_time <= #{endTime}
             WHERE u.status = 1
-            GROUP BY u.user_id, u.name, u.avatar, u.direction, ts.weekly_target_duration
-            HAVING ts.weekly_target_duration IS NOT NULL 
-                AND COALESCE(SUM(tr.duration), 0) < ts.weekly_target_duration
+            GROUP BY u.user_id, u.name, u.avatar, u.direction, ts.last_week_target_duration
+            HAVING ts.last_week_target_duration IS NOT NULL 
+                AND COALESCE(SUM(tr.duration), 0) < ts.last_week_target_duration
             ORDER BY lastWeekSignInTime DESC
             """)
     @Results({

@@ -1,4 +1,4 @@
-﻿package com.btea.auroratimerserver.service.impl;
+package com.btea.auroratimerserver.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -17,6 +17,7 @@ import com.btea.auroratimerserver.service.TimerService;
 import com.btea.auroratimerserver.vo.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -48,6 +49,7 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
     private final TimerRecordsMapper timerRecordsMapper;
     private final TimerSummaryMapper timerSummaryMapper;
     private final StringRedisTemplate stringRedisTemplate;
+    private final SqlSessionTemplate sqlSessionTemplate;
 
     /**
      * 获取计时器目标时长
@@ -370,6 +372,7 @@ public class TimerServiceImpl extends ServiceImpl<TimerRecordsMapper, TimerRecor
     /**
      * 获取处刑榜
      */
+
     @Override
     public List<PunishmentVO> getPunishment() {
         Date[] timeRange = getWeekTimeRange(-1);

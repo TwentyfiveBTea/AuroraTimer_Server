@@ -13,7 +13,7 @@ import java.util.Date;
 /**
  * @Author: TwentyFiveBTea
  * @Date: 2026/2/9 02:57
- * @Description: 时间统计实体类
+ * @Description: 时间统计实体
  */
 @Data
 @AllArgsConstructor
@@ -36,6 +36,11 @@ public class TimerSummaryDO {
      * 每周目标时长（秒）
      */
     private Integer weeklyTargetDuration;
+
+    /**
+     * 上周目标时长（秒），用于处刑榜查询，避免因重置后丢失历史目标
+     */
+    private Integer lastWeekTargetDuration;
 
     /**
      * 当前周时长（秒）
