@@ -1,0 +1,325 @@
+/* Aurora Timer - 精简主题设计系统 */
+/* 基于Aurora UI设计图重构 */
+
+:root {
+  /* 1. 核心色彩 - Aurora精简主题 */
+  --color-primary: #DFA473;           /* 主色调 - 温暖橙 */
+  --color-primary-dark: #C08A5E;     /* 主色深色 - 用于hover/active */
+  --color-bg-base: #F3F0E6;          /* 基础背景 - 柔和米色 */
+  --color-bg-panel: #FEFCF9;          /* 面板背景 - 奶白色 */
+  --color-text-main: #4A3F35;         /* 主要文字 - 深咖啡色 */
+  --color-text-muted: #8C847C;       /* 次要文字 - 柔和灰 */
+  
+  /* 2. 扩展背景色系 */
+  --color-bg-primary: #F3F0E6;        /* 主背景 - 同base */
+  --color-bg-secondary: #F7F4F0;      /* 次要背景 - 稍浅 */
+  --color-bg-tertiary: #FAF8F5;       /* 第三层背景 */
+  --color-bg-card: #FFFFFF;           /* 卡片背景 - 纯白 */
+  
+  /* 3. 扩展文字色彩 */
+  --color-text-primary: #4A3F35;      /* 主要文字 */
+  --color-text-secondary: #6B635A;   /* 次要文字 */
+  --color-text-tertiary: #8C847C;    /* 第三文字 */
+  --color-text-placeholder: #AFA99A;  /* 占位文字 */
+  --color-text-muted: #C4BFB6;       /* 弱化文字 */
+  
+  /* 4. 功能色系统 */
+  --color-success: #7CB87C;          /* 成功色 - 柔和绿 */
+  --color-success-light: #E8F5E8;     /* 成功浅色 */
+  --color-warning: #E8B86D;           /* 警告色 - 柔和橙 */
+  --color-warning-light: #FDF6E8;     /* 警告浅色 */
+  --color-error: #D66B6B;             /* 错误色 - 柔和红 */
+  --color-error-light: #FDE8E8;       /* 错误浅色 */
+  --color-info: #6B9BD2;              /* 信息色 - 柔和蓝 */
+  --color-info-light: #E8F0F8;        /* 信息浅色 */
+  
+  /* 5. 边框颜色 - 根据主题调整 */
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-light: rgba(0, 0, 0, 0.04);
+  --color-border-focus: #DFA473;
+  --color-border-secondary: rgba(0, 0, 0, 0.12);
+  
+  /* 6. 阴影系统 - 柔和拟态投影 */
+  --shadow-none: none;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.12);
+  
+  /* 7. 圆角规范 - 大圆角设计 */
+  --radius-none: 0;
+  --radius-sm: 8px;                  /* 小圆角 */
+  --radius-md: 12px;                  /* 中圆角 */
+  --radius-lg: 16px;                  /* 大圆角 - 卡片 */
+  --radius-xl: 20px;                  /* 特大圆角 - 面板 (1.25rem) */
+  --radius-2xl: 24px;                 /* 超大圆角 */
+  --radius-full: 9999px;              /* 全圆角 - pill shape */
+  
+  /* 8. 间距系统 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  
+  /* 9. 字体系统 */
+  --font-family-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-display: 'Inter', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  
+  /* 10. 字重 - 使用较粗字重 */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  
+  /* 11. 过渡动画 */
+  --transition-instant: 0ms;
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+  
+  /* 12. 层级系统 */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-notification: 800;
+}
+
+/* 深色主题 */
+[data-theme="dark"] {
+  --color-bg-base: #1A1A1A;
+  --color-bg-panel: #252525;
+  --color-bg-card: #2A2A2A;
+  --color-text-main: #F5F5F5;
+  --color-text-muted: #888888;
+  --color-bg-secondary: #2A2A2A;
+  --color-bg-tertiary: #303030;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-light: rgba(255, 255, 255, 0.04);
+  /* 文字颜色 - 浅色系 */
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #CCCCCC;
+  --color-text-tertiary: #999999;
+  --color-text-placeholder: #666666;
+  /* 边框颜色 */
+  --color-border-secondary: rgba(255, 255, 255, 0.12);
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #E8B88A;
+  --color-ring-big-end: #D4A574;
+  --color-ring-middle-start: #B892D8;
+  --color-ring-middle-end: #A77BC9;
+  --color-ring-little-start: #5DC27C;
+  --color-ring-little-end: #4DB86E;
+}
+
+/* 主题色板 - Aurora Classic (默认) */
+[data-theme="classic"],
+:root {
+  --color-primary: #DFA473;
+  --color-primary-dark: #C08A5E;
+  --color-bg-base: #F3F0E6;
+  --color-bg-panel: #FEFCF9;
+  --color-bg-card: #FFFFFF;
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #E8B88A;
+  --color-ring-big-end: #D4A574;
+  --color-ring-middle-start: #B892D8;
+  --color-ring-middle-end: #A77BC9;
+  --color-ring-little-start: #5DC27C;
+  --color-ring-little-end: #4DB86E;
+}
+
+/* Minimalist 主题 */
+[data-theme="minimalist"] {
+  --color-primary: #333333;
+  --color-primary-dark: #222222;
+  --color-bg-base: #F8F9FA;
+  --color-bg-panel: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #333333;
+  --color-text-muted: #888888;
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+  --color-text-tertiary: #999999;
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #666666;
+  --color-ring-big-end: #555555;
+  --color-ring-middle-start: #8BA0B0;
+  --color-ring-middle-end: #7A90A0;
+  --color-ring-little-start: #5DC4B8;
+  --color-ring-little-end: #4DB4A8;
+}
+
+/* Forest 主题 */
+[data-theme="forest"] {
+  --color-primary: #A3B18A;
+  --color-primary-dark: #8FA072;
+  --color-bg-base: #344E41;
+  --color-bg-panel: #3D5A4C;
+  --color-bg-card: #435D4C;
+  --color-text-main: #DAD7CD;
+  --color-text-muted: #A8B8A0;
+  --color-text-primary: #DAD7CD;
+  --color-text-secondary: #C4C7BB;
+  --color-text-tertiary: #A8B8A0;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-light: rgba(255, 255, 255, 0.06);
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #B8C9A9;
+  --color-ring-big-end: #A8B999;
+  --color-ring-middle-start: #789D77;
+  --color-ring-middle-end: #688D67;
+  --color-ring-little-start: #E8E2D5;
+  --color-ring-little-end: #D8D2C5;
+}
+
+/* Valentine 主题 */
+[data-theme="valentine"] {
+  --color-primary: #E96D7B;
+  --color-primary-dark: #D65A68;
+  --color-bg-base: #FAE7F3;
+  --color-bg-panel: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #632C3B;
+  --color-text-muted: #B090A0;
+  --color-text-primary: #632C3B;
+  --color-text-secondary: #8B4D5B;
+  --color-text-tertiary: #B090A0;
+  --color-border: rgba(99, 44, 59, 0.12);
+  --color-border-light: rgba(99, 44, 59, 0.06);
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #F5A0AA;
+  --color-ring-big-end: #E98A99;
+  --color-ring-middle-start: #FFD1DC;
+  --color-ring-middle-end: #FFC1CC;
+  --color-ring-little-start: #FFE57D;
+  --color-ring-little-end: #FFD54F;
+}
+
+/* Emerald 主题 */
+[data-theme="emerald"] {
+  --color-primary: #66CC8A;
+  --color-primary-dark: #4DB877;
+  --color-bg-base: #FFFFFF;
+  --color-bg-panel: #F8FAFC;
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #333C4D;
+  --color-text-muted: #789090;
+  --color-text-primary: #333C4D;
+  --color-text-secondary: #5A6A7A;
+  --color-text-tertiary: #789090;
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #88DDAA;
+  --color-ring-big-end: #77CD99;
+  --color-ring-middle-start: #5DADE2;
+  --color-ring-middle-end: #4C9DD2;
+  --color-ring-little-start: #AF7AC5;
+  --color-ring-little-end: #9E6AB5;
+}
+
+/* Autumn Warm 主题 - 暖秋风情 */
+[data-theme="autumn"] {
+  --color-primary: #F6A885;
+  --color-primary-dark: #E0935C;
+  --color-bg-base: #2A263D;
+  --color-bg-panel: #3D3548;
+  --color-bg-card: #453D52;
+  --color-text-main: #E8E0D8;
+  --color-text-muted: #B8A898;
+  --color-text-primary: #E8E0D8;
+  --color-text-secondary: #D4C8B8;
+  --color-text-tertiary: #B8A898;
+  --color-border: rgba(232, 224, 216, 0.12);
+  --color-border-light: rgba(232, 224, 216, 0.06);
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #F9C5A8;
+  --color-ring-big-end: #F8B598;
+  --color-ring-middle-start: #E87C44;
+  --color-ring-middle-end: #D86C34;
+  --color-ring-little-start: #5DC27C;
+  --color-ring-little-end: #4DB26C;
+}
+
+/* Macaron Pink 主题 - 马卡龙粉紫 */
+[data-theme="macaron"] {
+  --color-primary: #946EAF;
+  --color-primary-dark: #7D5A96;
+  --color-bg-base: #EBC6DC;
+  --color-bg-panel: #F5E6F5;
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #4A3F35;
+  --color-text-muted: #9A8899;
+  --color-text-primary: #4A3F35;
+  --color-text-secondary: #6B635A;
+  --color-text-tertiary: #9A8899;
+  --color-border: rgba(74, 63, 53, 0.15);
+  --color-border-light: rgba(74, 63, 53, 0.08);
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #B494C7;
+  --color-ring-big-end: #A484B7;
+  --color-ring-middle-start: #A8D8FA;
+  --color-ring-middle-end: #98C8EA;
+  --color-ring-little-start: #FFCC80;
+  --color-ring-little-end: #FFB970;
+}
+
+/* Morandi Contrast 主题 - 莫兰迪对比 */
+[data-theme="morandi"] {
+  --color-primary: #E77141;
+  --color-primary-dark: #D05F35;
+  --color-bg-base: #FBC697;
+  --color-bg-panel: #F5E6DE;
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #4A3F35;
+  --color-text-muted: #8A7A8A;
+  --color-text-primary: #4A3F35;
+  --color-text-secondary: #6B635A;
+  --color-text-tertiary: #8A7A8A;
+  --color-border: rgba(74, 63, 53, 0.15);
+  --color-border-light: rgba(74, 63, 53, 0.08);
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #F0A078;
+  --color-ring-big-end: #E09068;
+  --color-ring-middle-start: #8B7BA8;
+  --color-ring-middle-end: #7B6B98;
+  --color-ring-little-start: #A8C878;
+  --color-ring-little-end: #98B868;
+}
+
+/* Deep Blue 主题 - 深蓝治愈 */
+[data-theme="deepblue"] {
+  --color-primary: #35549E;
+  --color-primary-dark: #2A4585;
+  --color-bg-base: #8AA3BC;
+  --color-bg-panel: #C8D8E8;
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #333C4D;
+  --color-text-muted: #6A7A7A;
+  --color-text-primary: #333C4D;
+  --color-text-secondary: #5A6A7A;
+  --color-text-tertiary: #6A7A7A;
+  --color-border: rgba(51, 60, 77, 0.15);
+  --color-border-light: rgba(51, 60, 77, 0.08);
+  /* 大中小环颜色 - 浅色系 */
+  --color-ring-big-start: #5B7FC4;
+  --color-ring-big-end: #4B6FB4;
+  --color-ring-middle-start: #4DB8D0;
+  --color-ring-middle-end: #3DA8C0;
+  --color-ring-little-start: #5CC47A;
+  --color-ring-little-end: #4CB46A;
+}

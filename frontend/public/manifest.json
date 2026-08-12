@@ -1,0 +1,21 @@
+{
+  "name": "Aurora Timer",
+  "short_name": "Aurora",
+  "description": "Aurora Studio Community - 工时管理与协作平台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF4ED",
+  "theme_color": "#E6915B",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
