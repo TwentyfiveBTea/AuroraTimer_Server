@@ -31,6 +31,15 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
+# Node.js / npm
+node_modules/
+dist/
+dist-electron/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 # Gradle
 .gradle/
 build/
@@ -79,6 +88,10 @@ application.yml
 application-local.yml
 application-dev.yml
 application-prod.yml
+.env
+.env.local
+.env.*.local
+.env.production
 
 # 日志目录
 logs/
@@ -101,3 +114,8 @@ h2/
 *.swp
 *.swo
 *~
+*.tmp
+*.temp
+*.bak
+*.pid
+*.seed
