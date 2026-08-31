@@ -195,8 +195,12 @@ async function handleLogin() {
     })
     
     if (result.success) {
-      // 登录成功后自动开始计时
-      timerStore.startTimer()
+      await timerStore.fetchTimerStatus()
+      if (timerStore.serverStatus.isTiming || timerStore.serverStatus.status === 'RUNNING') {
+        timerStore.restoreTimerState(true)
+      } else {
+        await timerStore.startTimer()
+      }
       
       // 获取 redirect 参数或跳转到首页
       const redirect = router.currentRoute.value.query.redirect || '/'

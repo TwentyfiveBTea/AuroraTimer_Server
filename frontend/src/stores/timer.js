@@ -3,6 +3,12 @@ import { ref, computed } from 'vue'
 import { timerAPI, userAPI } from '@/api'
 import { formatTime } from '@/utils'
 import { useAuthStore } from './auth'
+import {
+  getTimerFlags,
+  shouldPersistTimerState,
+  shouldPauseFromHeartbeat,
+  shouldResumeSavedSession
+} from './timerLifecycle'
 
 // Web Worker 实例
 let timerWorker = null
@@ -23,6 +29,11 @@ function getTimerWorker() {
 
 export const useTimerStore = defineStore('timer', () => {
   const authStore = useAuthStore()
+  // 获取 userId，优先使用 authStore，降级到 localStorage（防止初始化时 user 为 null 导致 API 静默失败）
+  function getUserId() {
+    return authStore.user?.userId || localStorage.getItem("auth_userId")
+  }
+
   
 // ============ 计时器状态初始化（不再依赖本地缓存） ============
 // 初始状态设为默认值，不从 localStorage 恢复
@@ -55,14 +66,35 @@ const todayDuration = ref(0) // 今日时长（秒）
   
   // ============ 保存计时状态到 localStorage ============
   function saveTimerState() {
+    if (!shouldPersistTimerState({ isRunning: isRunning.value })) return
+
     const state = {
+      userId: getUserId(),
       isRunning: isRunning.value,
       isPaused: isPaused.value,
       isAFK: isAFK.value,
       currentTime: currentTime.value,
-      todayDuration: todayDuration.value
+      todayDuration: todayDuration.value,
+      savedAt: Date.now()
     }
     localStorage.setItem('timer_state', JSON.stringify(state))
+  }
+
+  function applyTimerMode(mode) {
+    const flags = getTimerFlags(mode)
+    isRunning.value = flags.isRunning
+    isPaused.value = flags.isPaused
+    isAFK.value = flags.isAFK
+  }
+
+  function shouldResumeAfterRestart() {
+    try {
+      const savedState = JSON.parse(localStorage.getItem('timer_state') || 'null')
+      return shouldResumeSavedSession(savedState, getUserId())
+    } catch (error) {
+      console.warn('[Timer] Failed to read saved timer state:', error)
+      return false
+    }
   }
   
   // ============ 计算属性 ============
@@ -115,9 +147,14 @@ const todayDuration = ref(0) // 今日时长（秒）
    * 对接后端: POST /timer/start?userId=xxx
    */
   async function startTimer() {
+    // Handle stale running state (e.g., after logout/login without page refresh)
+    if (isRunning.value && !workerRunning) {
+      console.log("[Timer] Detected stale running state, resetting before restart...")
+      resetTimerState()
+    }
     if (isRunning.value) return
     
-    const userId = authStore.user?.userId
+    const userId = getUserId()
     if (!userId) {
       console.error('[Timer] 无法获取用户ID')
       return
@@ -130,9 +167,7 @@ const todayDuration = ref(0) // 今日时长（秒）
       // 调用后端接口开始计时
       await timerAPI.startTimer(userId)
     
-    isRunning.value = true
-    isPaused.value = false
-    isAFK.value = false
+    applyTimerMode('RUNNING')
     
     // 保存状态
     saveTimerState()
@@ -203,19 +238,16 @@ const todayDuration = ref(0) // 今日时长（秒）
   /**
    * 暂停计时器
    */
-  function pauseTimer() {
+  function pauseTimer(isAFKPause = false) {
     if (!isRunning.value || isPaused.value) return
     
-    isPaused.value = true
+    applyTimerMode(isAFKPause ? 'AFK_PAUSED' : 'PAUSED')
     
     // 保存状态
     saveTimerState()
     
     const worker = getTimerWorker()
     worker.postMessage({ command: 'pause' })
-    
-    // 移除 Worker 消息处理，避免继续计时
-    worker.onmessage = null
   }
   
   /**
@@ -225,7 +257,7 @@ const todayDuration = ref(0) // 今日时长（秒）
     if (!isRunning.value || !isPaused.value) return
     
     // 发送心跳检测
-    const userId = authStore.user?.userId
+    const userId = getUserId()
     if (userId) {
       try {
         await timerAPI.heartbeat(userId)
@@ -234,8 +266,7 @@ const todayDuration = ref(0) // 今日时长（秒）
       }
     }
     
-    isPaused.value = false
-    isAFK.value = false
+    applyTimerMode('RUNNING')
     
     const worker = getTimerWorker()
     worker.onmessage = handleWorkerMessage
@@ -249,7 +280,7 @@ const todayDuration = ref(0) // 今日时长（秒）
   async function stopTimer() {
     if (!isRunning.value) return
     
-    const userId = authStore.user?.userId
+    const userId = getUserId()
     if (!userId) {
       console.error('[Timer] 无法获取用户ID')
       return
@@ -259,9 +290,7 @@ const todayDuration = ref(0) // 今日时长（秒）
       // 调用后端接口停止计时
       await timerAPI.stopTimer(userId)
     
-    isRunning.value = false
-    isPaused.value = false
-    isAFK.value = false
+    applyTimerMode('STOPPED')
     
     // 清除本地计时状态
     localStorage.removeItem('timer_state')
@@ -295,9 +324,7 @@ const todayDuration = ref(0) // 今日时长（秒）
     }
     
     // 重置所有状态
-    isRunning.value = false
-    isPaused.value = false
-    isAFK.value = false
+    applyTimerMode('STOPPED')
     currentTime.value = 0
     todayDuration.value = 0
     serverStatus.value = {
@@ -321,7 +348,9 @@ const todayDuration = ref(0) // 今日时长（秒）
    */
   async function syncToServer() {
     try {
-      const userId = authStore.user?.userId
+      if (!isRunning.value || isPaused.value || isAFK.value) return
+
+      const userId = getUserId()
       if (!userId) return
       
       // 调用 API 同步时间
@@ -357,7 +386,7 @@ const todayDuration = ref(0) // 今日时长（秒）
    */
   async function fetchTimerStatus() {
     try {
-      const userId = authStore.user?.userId
+      const userId = getUserId()
       if (!userId) {
         console.warn('[Timer] 无法获取用户ID，无法获取计时状态')
         return
@@ -422,7 +451,7 @@ const todayDuration = ref(0) // 今日时长（秒）
    */
   async function fetchTargetDuration() {
     try {
-      const userId = authStore.user?.userId
+      const userId = getUserId()
       if (!userId) {
         console.warn('[Timer] 无法获取用户ID，无法获取目标时长')
         return null
@@ -482,15 +511,16 @@ const todayDuration = ref(0) // 今日时长（秒）
     if (!window.electronAPI || isAFK.value) return
     
     // 发送心跳检测
-    const userId = authStore.user?.userId
+    const userId = getUserId()
     if (userId) {
       try {
         const response = await timerAPI.heartbeat(userId)
         const code = response?.code
         const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
         
-        // 如果心跳返回成功但 data 是 false，说明用户已离线
-        if (isSuccessCode && response.data === false) {
+        // 服务端已判定离线时立即暂停，不能跳过本地 AFK 处理。
+        if (shouldPauseFromHeartbeat({ success: isSuccessCode, isOnline: response.data })) {
+          triggerAFK()
           return
         }
       } catch (error) {
@@ -522,8 +552,7 @@ const todayDuration = ref(0) // 今日时长（秒）
    * 触发挂机状态
    */
   function triggerAFK() {
-    isAFK.value = true
-    pauseTimer()
+    pauseTimer(true)
     
     // 显示系统通知
     showAFKNotification()
@@ -665,6 +694,8 @@ const todayDuration = ref(0) // 今日时长（秒）
     const shouldRun = forceRestore || (isRunning.value && !isPaused.value)
     
     if (shouldRun) {
+      applyTimerMode('RUNNING')
+
       // 设置恢复模式标志，跳过首次同步
       justRestored.value = true
       
@@ -680,6 +711,8 @@ const todayDuration = ref(0) // 今日时长（秒）
       })
       
       workerRunning = true
+      saveTimerState()
+      initAFKDetection()
     } else {
     }
   }
@@ -732,6 +765,7 @@ const todayDuration = ref(0) // 今日时长（秒）
     
     // 恢复方法
     restoreTimerState,
+    shouldResumeAfterRestart,
     
     // 清理方法
     cleanup

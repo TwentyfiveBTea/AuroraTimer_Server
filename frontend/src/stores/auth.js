@@ -1,9 +1,9 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { setStorage, getStorage, removeStorage } from '@/utils'
 import { authAPI, userAPI } from '@/api'
-import { createAuthInitializer } from './authInitialization'
+import { useTimerStore } from './timer'
 
 export const useAuthStore = defineStore('auth', () => {
   // ============ Router ============
@@ -81,6 +81,9 @@ export const useAuthStore = defineStore('auth', () => {
           localStorage.setItem('auth_userInfo', JSON.stringify(user.value))
           console.log('[Auth] 用户信息已保存:', user.value)
         }
+
+        // 登录接口只返回简略资料，进入应用前补齐完整用户信息。
+        await fetchUser()
         
         console.log('[Auth] isAuthenticated:', isAuthenticated.value)
         return { success: true }
@@ -145,6 +148,8 @@ export const useAuthStore = defineStore('auth', () => {
       console.error('退出登录请求失败:', err)
     } finally {
       // 无论成功失败，都清除本地状态
+      const timerStore = useTimerStore()
+      await timerStore.stopTimer()
       clearAllStorage()
       // 使用 Vue Router 导航到登录页
       router.push('/login')
@@ -161,6 +166,16 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('admin_token')
     localStorage.removeItem('admin_user')
     localStorage.removeItem('timer_state')
+    
+    // Reset timer store state (isRunning, workerRunning, serverStatus)
+    // Ensures startTimer() is not blocked by stale isRunning=true on re-login
+    try {
+      const timerStore = useTimerStore()
+      timerStore.resetTimerState()
+    } catch (e) {
+      console.warn("[Auth] Failed to reset timer state:", e)
+    }
+    
     console.log('[Auth] 已清除所有本地存储数据')
   }
 
@@ -168,7 +183,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUser() {
     if (!token.value) {
       clearAllStorage()
-      return false
+      return
     }
     
     isLoading.value = true
@@ -177,10 +192,9 @@ export const useAuthStore = defineStore('auth', () => {
       // 需要提供 userId
       const userId = user.value?.userId || localStorage.getItem('auth_userId')
       if (!userId) {
-        console.warn('[Auth] 无法获取用户ID，清除所有本地数据')
         clearAllStorage()
-        await router.replace('/login')
-        return false
+        router.push('/login')
+        return
       }
       
       const response = await userAPI.getUserInfo(userId)
@@ -198,12 +212,7 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('auth_userId', response.data.userId)
         // 缓存完整的用户信息
         localStorage.setItem('auth_userInfo', JSON.stringify(response.data))
-        return true
       }
-
-      clearAllStorage()
-      await router.replace('/login')
-      return false
     } catch (err) {
       error.value = err.message
       console.warn('获取用户信息失败:', err.message)
@@ -215,13 +224,12 @@ export const useAuthStore = defineStore('auth', () => {
       const status = err.response?.status
       const errorCode = err.response?.data?.code
       
-      if (status === 401 || status === 404 || status === 403 || 
+      if (status === 401 || status === 404 || status === 403 ||
           errorCode === 401 || errorCode === 404 || errorCode === 'USER_NOT_FOUND' ||
           err.message?.includes('用户不存在') || err.message?.includes('无效')) {
-        console.warn('[Auth] 检测到用户已被删除或token无效，清除所有本地数据')
         clearAllStorage()
-        await router.replace('/login')
-        return false
+        router.push('/login')
+        return
       }
       
       // 尝试从本地存储恢复用户信息（仅用于网络错误时的临时显示）
@@ -234,7 +242,6 @@ export const useAuthStore = defineStore('auth', () => {
           console.error('[Auth] 解析本地用户信息失败:', e)
         }
       }
-      return !!token.value && !!user.value
     } finally {
       isLoading.value = false
     }
@@ -342,31 +349,32 @@ export const useAuthStore = defineStore('auth', () => {
   }
   
   // ============ 初始化从本地存储恢复数据并验证 token ============
-  const initializeAuth = createAuthInitializer({
-    readSession: () => ({
-      token: localStorage.getItem('auth_token'),
-      userInfo: localStorage.getItem('auth_userInfo')
-    }),
-    restoreSession: (session) => {
-      token.value = session.token
+  async function initFromStorage() {
+    const savedUserInfo = localStorage.getItem('auth_userInfo')
+    const savedToken = localStorage.getItem('auth_token')
 
-      if (session.userInfo) {
+    if (savedToken) {
+      token.value = savedToken
+
+      // 同步恢复缓存的用户信息，提供初始展示数据
+      if (savedUserInfo) {
         try {
-          user.value = JSON.parse(session.userInfo)
+          user.value = JSON.parse(savedUserInfo)
         } catch (e) {
           console.error('[Auth] 解析本地用户信息失败:', e)
         }
       }
-    },
-    validateSession: fetchUser,
-    clearSession: clearAllStorage,
-    setReady: (value) => {
-      authReady.value = value
-    }
-  })
 
-  function initFromStorage() {
-    return initializeAuth()
+      // 等待 token 验证完成再放行，确保 authReady=true 时数据已是最新
+      await fetchUser().catch(e => {
+        console.error('[Auth] initFromStorage fetchUser 失败:', e)
+      })
+    } else {
+      clearAllStorage()
+    }
+
+    // 验证完成后标记 ready，App.vue 加载遮罩此时消失
+    authReady.value = true
   }
   
   // 页面加载时初始化
